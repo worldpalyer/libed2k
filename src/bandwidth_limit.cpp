@@ -33,56 +33,44 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
 #include "libed2k/bandwidth_limit.hpp"
 
-namespace libed2k
-{
-    bandwidth_channel::bandwidth_channel()
-        : tmp(0)
-        , distribute_quota(0)
-        , m_quota_left(0)
-        , m_limit(0)
-    {}
+namespace libed2k {
+bandwidth_channel::bandwidth_channel() : tmp(0), distribute_quota(0), m_quota_left(0), m_limit(0) {}
 
-    // 0 means infinite
-    void bandwidth_channel::throttle(int limit)
-    {
-        LIBED2K_ASSERT(limit >= 0);
-        // if the throttle is more than this, we might overflow
-        LIBED2K_ASSERT(limit < INT_MAX / 31);
-        m_limit = limit;
-    }
-    
-    int bandwidth_channel::quota_left() const
-    {
-        if (m_limit == 0) return inf;
-        return (std::max)(int(m_quota_left), 0);
-    }
+// 0 means infinite
+void bandwidth_channel::throttle(int limit) {
+    LIBED2K_ASSERT(limit >= 0);
+    // if the throttle is more than this, we might overflow
+    LIBED2K_ASSERT(limit < INT_MAX / 31);
+    m_limit = limit;
+}
 
-    void bandwidth_channel::update_quota(int dt_milliseconds)
-    {
-        if (m_limit == 0) return;
-        m_quota_left += (m_limit * dt_milliseconds + 500) / 1000;
-        if (m_quota_left > m_limit * 3) m_quota_left = m_limit * 3;
-        distribute_quota = int((std::max)(m_quota_left, boost::int64_t(0)));
-   }
+int bandwidth_channel::quota_left() const {
+    if (m_limit == 0) return inf;
+    return (std::max)(int(m_quota_left), 0);
+}
 
-    // this is used when connections disconnect with
-    // some quota left. It's returned to its bandwidth
-    // channels.
-    void bandwidth_channel::return_quota(int amount)
-    {
-        LIBED2K_ASSERT(amount >= 0);
-        if (m_limit == 0) return;
-        LIBED2K_ASSERT(m_quota_left <= m_quota_left + amount);
-        m_quota_left += amount;
-    }
+void bandwidth_channel::update_quota(int dt_milliseconds) {
+    if (m_limit == 0) return;
+    m_quota_left += (m_limit * dt_milliseconds + 500) / 1000;
+    if (m_quota_left > m_limit * 3) m_quota_left = m_limit * 3;
+    distribute_quota = int((std::max)(m_quota_left, boost::int64_t(0)));
+}
 
-    void bandwidth_channel::use_quota(int amount)
-    {
-        LIBED2K_ASSERT(amount >= 0);
-        LIBED2K_ASSERT(m_limit >= 0);
-        if (m_limit == 0) return;
+// this is used when connections disconnect with
+// some quota left. It's returned to its bandwidth
+// channels.
+void bandwidth_channel::return_quota(int amount) {
+    LIBED2K_ASSERT(amount >= 0);
+    if (m_limit == 0) return;
+    LIBED2K_ASSERT(m_quota_left <= m_quota_left + amount);
+    m_quota_left += amount;
+}
 
-        m_quota_left -= amount;
-    }
+void bandwidth_channel::use_quota(int amount) {
+    LIBED2K_ASSERT(amount >= 0);
+    LIBED2K_ASSERT(m_limit >= 0);
+    if (m_limit == 0) return;
 
+    m_quota_left -= amount;
+}
 }

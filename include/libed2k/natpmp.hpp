@@ -44,8 +44,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/function/function1.hpp>
 #include <boost/function/function4.hpp>
 
-namespace libed2k
-{
+namespace libed2k {
 
 // int: port mapping index
 // int: external port
@@ -53,11 +52,9 @@ namespace libed2k
 typedef boost::function<void(int, address, int, error_code const&)> portmap_callback_t;
 typedef boost::function<void(char const*)> log_callback_t;
 
-class LIBED2K_EXPORT natpmp : public intrusive_ptr_base<natpmp>
-{
-public:
-    natpmp(io_service& ios, address const& listen_interface,
-           portmap_callback_t const& cb, log_callback_t const& lcb);
+class LIBED2K_EXPORT natpmp : public intrusive_ptr_base<natpmp> {
+   public:
+    natpmp(io_service& ios, address const& listen_interface, portmap_callback_t const& cb, log_callback_t const& lcb);
 
     void rebind(address const& listen_interface);
 
@@ -70,8 +67,7 @@ public:
 
     void close();
 
-private:
-
+   private:
     void update_mapping(int i, mutex::scoped_lock& l);
     void send_map_request(int i, mutex::scoped_lock& l);
     void send_get_ip_address_request(mutex::scoped_lock& l);
@@ -85,17 +81,15 @@ private:
     void log(char const* msg, mutex::scoped_lock& l);
     void disable(error_code const& ec, mutex::scoped_lock& l);
 
-    struct mapping_t
-    {
+    struct mapping_t {
         enum action_t { action_none, action_add, action_delete };
         mapping_t()
-            : action(action_none)
-            , local_port(0)
-            , external_port(0)
-            , protocol(none)
-            , map_sent(false)
-            , outstanding_request(false)
-        {}
+            : action(action_none),
+              local_port(0),
+              external_port(0),
+              protocol(none),
+              map_sent(false),
+              outstanding_request(false) {}
 
         // indicates that the mapping has changed
         // and needs an update
@@ -167,8 +161,6 @@ private:
 
     mutable mutex m_mutex;
 };
-
 }
-
 
 #endif

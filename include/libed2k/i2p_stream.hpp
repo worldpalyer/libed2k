@@ -49,49 +49,38 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace libed2k {
 
-    namespace i2p_error {
+namespace i2p_error {
 
-        enum i2p_error_code
-        {
-            no_error = 0,
-            parse_failed,
-            cant_reach_peer,
-            i2p_error,
-            invalid_key,
-            invalid_id,
-            timeout,
-            key_not_found,
-            duplicated_id,
-            num_errors
-        };
-    }
+enum i2p_error_code {
+    no_error = 0,
+    parse_failed,
+    cant_reach_peer,
+    i2p_error,
+    invalid_key,
+    invalid_id,
+    timeout,
+    key_not_found,
+    duplicated_id,
+    num_errors
+};
+}
 
-struct i2p_error_category : boost::system::error_category
-{
+struct i2p_error_category : boost::system::error_category {
     virtual const char* name() const BOOST_SYSTEM_NOEXCEPT;
     virtual std::string message(int ev) const BOOST_SYSTEM_NOEXCEPT;
-    virtual boost::system::error_condition default_error_condition(int ev) const BOOST_SYSTEM_NOEXCEPT
-    { return boost::system::error_condition(ev, *this); }
+    virtual boost::system::error_condition default_error_condition(int ev) const BOOST_SYSTEM_NOEXCEPT {
+        return boost::system::error_condition(ev, *this);
+    }
 };
 
 extern i2p_error_category i2p_category;
 
-class i2p_stream : public proxy_base
-{
-public:
-
+class i2p_stream : public proxy_base {
+   public:
     explicit i2p_stream(io_service& io_service);
     ~i2p_stream();
 
-    enum command_t
-    {
-        cmd_none,
-        cmd_create_session,
-        cmd_connect,
-        cmd_accept,
-        cmd_name_lookup,
-        cmd_incoming
-    };
+    enum command_t { cmd_none, cmd_create_session, cmd_connect, cmd_accept, cmd_name_lookup, cmd_incoming };
 
     void set_command(command_t c) { m_command = c; }
 
@@ -103,8 +92,7 @@ public:
     typedef boost::function<void(error_code const&)> handler_type;
 
     template <class Handler>
-    void async_connect(endpoint_type const& endpoint, Handler const& handler)
-    {
+    void async_connect(endpoint_type const& endpoint, Handler const& handler) {
         // since we don't support regular endpoints, just ignore the one
         // provided and use m_dest.
 
@@ -126,8 +114,7 @@ public:
 
     void send_name_lookup(boost::shared_ptr<handler_type> h);
 
-private:
-
+   private:
     bool handle_error(error_code const& e, boost::shared_ptr<handler_type> const& h);
     void do_connect(error_code const& e, tcp::resolver::iterator i, boost::shared_ptr<handler_type> h);
     void connected(error_code const& e, boost::shared_ptr<handler_type> h);
@@ -140,12 +127,11 @@ private:
     // send and receive buffer
     std::vector<char> m_buffer;
     char const* m_id;
-    int m_command; // 0 = connect, 1 = accept
+    int m_command;  // 0 = connect, 1 = accept
     std::string m_dest;
     std::string m_name_lookup;
 
-    enum state_t
-    {
+    enum state_t {
         read_hello_response,
         read_connect_response,
         read_accept_response,
@@ -159,20 +145,14 @@ private:
 #endif
 };
 
-class i2p_connection
-{
-public:
+class i2p_connection {
+   public:
     i2p_connection(io_service& ios);
     ~i2p_connection();
 
     proxy_settings const& proxy() const { return m_sam_router; }
 
-    bool is_open() const
-    {
-        return m_sam_socket
-            && m_sam_socket->is_open()
-            && m_state != sam_connecting;
-    }
+    bool is_open() const { return m_sam_socket && m_sam_socket->is_open() && m_state != sam_connecting; }
     void open(proxy_settings const& s, i2p_stream::handler_type const& h);
     void close(error_code&);
 
@@ -182,8 +162,7 @@ public:
     typedef boost::function<void(error_code const&, char const*)> name_lookup_handler;
     void async_name_lookup(char const* name, name_lookup_handler handler);
 
-private:
-
+   private:
     void on_sam_connect(error_code const& ec, i2p_stream::handler_type const& h, boost::shared_ptr<i2p_stream>);
     void do_name_lookup(std::string const& name, name_lookup_handler const& h);
     void on_name_lookup(error_code const& ec, name_lookup_handler handler, boost::shared_ptr<i2p_stream>);
@@ -200,19 +179,13 @@ private:
 
     std::list<std::pair<std::string, name_lookup_handler> > m_name_lookup;
 
-    enum state_t
-    {
-        sam_connecting,
-        sam_name_lookup,
-        sam_idle
-    };
+    enum state_t { sam_connecting, sam_name_lookup, sam_idle };
 
     state_t m_state;
 
     io_service& m_io_service;
 };
-
 }
-#endif // LIBED2K_USE_I2P
+#endif  // LIBED2K_USE_I2P
 
 #endif

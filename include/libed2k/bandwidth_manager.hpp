@@ -44,8 +44,7 @@ using boost::intrusive_ptr;
 
 namespace libed2k {
 
-struct LIBED2K_EXTRA_EXPORT bandwidth_manager
-{
+struct LIBED2K_EXTRA_EXPORT bandwidth_manager {
     bandwidth_manager(int channel);
 
     void close();
@@ -56,19 +55,15 @@ struct LIBED2K_EXTRA_EXPORT bandwidth_manager
 
     int queue_size() const;
     int queued_bytes() const;
-    
+
     // non prioritized means that, if there's a line for bandwidth,
     // others will cut in front of the non-prioritized peers.
     // this is used by web seeds
     // returns the number of bytes to assign to the peer, or 0
     // if the peer's 'assign_bandwidth' callback will be called later
-    int request_bandwidth(const intrusive_ptr<peer_connection>& peer
-        , int blk, int priority
-        , bandwidth_channel* chan1 = 0
-        , bandwidth_channel* chan2 = 0
-        , bandwidth_channel* chan3 = 0
-        , bandwidth_channel* chan4 = 0
-        , bandwidth_channel* chan5 = 0);
+    int request_bandwidth(const intrusive_ptr<peer_connection>& peer, int blk, int priority,
+                          bandwidth_channel* chan1 = 0, bandwidth_channel* chan2 = 0, bandwidth_channel* chan3 = 0,
+                          bandwidth_channel* chan4 = 0, bandwidth_channel* chan5 = 0);
 
 #ifdef LIBED2K_DEBUG
     void check_invariant() const;
@@ -88,8 +83,6 @@ struct LIBED2K_EXTRA_EXPORT bandwidth_manager
 
     bool m_abort;
 };
-
 }
 
 #endif
-

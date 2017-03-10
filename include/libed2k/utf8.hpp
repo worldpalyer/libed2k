@@ -42,12 +42,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <cwchar>
 
-namespace libed2k
-{
-	LIBED2K_EXPORT int utf8_wchar(const std::string &utf8, std::wstring &wide);
-	LIBED2K_EXPORT int wchar_utf8(const std::wstring &wide, std::string &utf8);
+namespace libed2k {
+LIBED2K_EXPORT int utf8_wchar(const std::string& utf8, std::wstring& wide);
+LIBED2K_EXPORT int wchar_utf8(const std::wstring& wide, std::string& utf8);
 }
-#endif // !BOOST_NO_STD_WSTRING
+#endif  // !BOOST_NO_STD_WSTRING
 
 #endif
-

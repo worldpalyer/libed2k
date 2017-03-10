@@ -65,165 +65,139 @@ POSSIBILITY OF SUCH DAMAGE.
 #define LIBED2K_MAX_ALERT_TYPES 7
 #endif
 
-namespace libed2k
-{
-    class alert
-    {
-    public:
+namespace libed2k {
+class alert {
+   public:
+    // only here for backwards compatibility
+    enum severity_t { debug, info, warning, critical, fatal, none };
 
-        // only here for backwards compatibility
-        enum severity_t { debug, info, warning, critical, fatal, none };
-
-        enum category_t
-        {
-            error_notification          = 0x1,
-            peer_notification           = 0x2,
-            port_mapping_notification   = 0x4,
-            storage_notification        = 0x8,
-            tracker_notification        = 0x10,
-            debug_notification          = 0x20,
-            status_notification         = 0x40,
-            progress_notification       = 0x80,
-            ip_block_notification       = 0x100,
-            performance_warning         = 0x200,
-            server_notification         = 0x400,
-            dht_notification            = 0x400,
-            stats_notification          = 0x800,
-            all_categories = 0xffffffff
-        };
-
-        alert();
-        virtual ~alert();
-
-        // a timestamp is automatically created in the constructor
-        ptime timestamp() const;
-
-        virtual char const* what() const = 0;
-        virtual std::string message() const = 0;
-        virtual int category() const = 0;
-        virtual std::auto_ptr<alert> clone() const = 0;
-
-    private:
-        ptime m_timestamp;
+    enum category_t {
+        error_notification = 0x1,
+        peer_notification = 0x2,
+        port_mapping_notification = 0x4,
+        storage_notification = 0x8,
+        tracker_notification = 0x10,
+        debug_notification = 0x20,
+        status_notification = 0x40,
+        progress_notification = 0x80,
+        ip_block_notification = 0x100,
+        performance_warning = 0x200,
+        server_notification = 0x400,
+        dht_notification = 0x400,
+        stats_notification = 0x800,
+        all_categories = 0xffffffff
     };
 
-    template <class T>
-    T* alert_cast(alert* a)
-    {
-        return dynamic_cast<T*>(a);
-    }
+    alert();
+    virtual ~alert();
 
-    template <class T>
-    T const* alert_cast(alert const* a)
-    {
-        return dynamic_cast<T const*>(a);
-    }
+    // a timestamp is automatically created in the constructor
+    ptime timestamp() const;
 
-    class alert_manager
-    {
-    public:
-        enum { queue_size_limit_default = 1000 };
+    virtual char const* what() const = 0;
+    virtual std::string message() const = 0;
+    virtual int category() const = 0;
+    virtual std::auto_ptr<alert> clone() const = 0;
 
-        alert_manager(io_service& ios);
-        ~alert_manager();
+   private:
+    ptime m_timestamp;
+};
 
-        bool post_alert(const alert& alert_);
-        bool pending() const;
-        std::auto_ptr<alert> get();
-
-        template <class T>
-        bool should_post() const
-        {
-            boost::mutex::scoped_lock lock(m_mutex);
-            if (m_alerts.size() >= m_queue_size_limit) return false;
-            return (m_alert_mask & T::static_category) != 0;
-        }
-
-        template<class T>
-        void post_alert_should(const T& alert)
-        {
-            if (should_post<T>())
-            {
-                post_alert(alert);
-            }
-        }
-
-        alert const* wait_for_alert(time_duration max_wait);
-
-        void set_alert_mask(boost::uint32_t m)
-        {
-            boost::mutex::scoped_lock lock(m_mutex);
-            m_alert_mask = m;
-        }
-
-        size_t alert_queue_size_limit() const { return m_queue_size_limit; }
-        size_t set_alert_queue_size_limit(size_t queue_size_limit_);
-
-        void set_dispatch_function(boost::function<void(alert const&)> const&);
-
-    private:
-        std::queue<alert*> m_alerts;
-        mutable boost::mutex m_mutex;
-        boost::condition m_condition;
-        boost::uint32_t m_alert_mask;
-        size_t m_queue_size_limit;
-        boost::function<void(alert const&)> m_dispatch;
-        io_service& m_ios;
-    };
-
-    struct unhandled_alert : std::exception
-    {
-        unhandled_alert() {}
-    };
-
-    namespace libed2k_detail
-    {
-
-        struct void_;
-
-        template<class Handler
-            , BOOST_PP_ENUM_PARAMS(LIBED2K_MAX_ALERT_TYPES, class T)>
-        void handle_alert_dispatch(
-            const std::auto_ptr<alert>& alert_, const Handler& handler
-            , const std::type_info& typeid_
-            , T0*, BOOST_PP_ENUM_SHIFTED_BINARY_PARAMS(LIBED2K_MAX_ALERT_TYPES, T, *p))
-        {
-            if (typeid_ == typeid(T0))
-                handler(*static_cast<T0*>(alert_.get()));
-            else
-                handle_alert_dispatch(alert_, handler, typeid_
-                    , BOOST_PP_ENUM_SHIFTED_PARAMS(LIBED2K_MAX_ALERT_TYPES, p), (void_*)0);
-        }
-
-        template<class Handler>
-        void handle_alert_dispatch(
-            const std::auto_ptr<alert>&
-            , const Handler&
-            , const std::type_info&
-            , BOOST_PP_ENUM_PARAMS(LIBED2K_MAX_ALERT_TYPES, void_* BOOST_PP_INTERCEPT))
-        {
-            throw unhandled_alert();
-        }
-
-    } // namespace detail
-
-    template<BOOST_PP_ENUM_PARAMS_WITH_A_DEFAULT( LIBED2K_MAX_ALERT_TYPES, class T, libed2k_detail::void_)>
-    struct handle_alert
-    {
-        template<class Handler>
-        handle_alert(const std::auto_ptr<alert>& alert_
-            , const Handler& handler)
-        {
-            #define ALERT_POINTER_TYPE(z, n, text) (BOOST_PP_CAT(T, n)*)0
-
-                libed2k_detail::handle_alert_dispatch(alert_, handler, typeid(*alert_)
-                , BOOST_PP_ENUM(LIBED2K_MAX_ALERT_TYPES, ALERT_POINTER_TYPE, _));
-
-            #undef ALERT_POINTER_TYPE
-        }
-    };
-
+template <class T>
+T* alert_cast(alert* a) {
+    return dynamic_cast<T*>(a);
 }
 
-#endif // __LIBED2K_ALERT__
+template <class T>
+T const* alert_cast(alert const* a) {
+    return dynamic_cast<T const*>(a);
+}
 
+class alert_manager {
+   public:
+    enum { queue_size_limit_default = 1000 };
+
+    alert_manager(io_service& ios);
+    ~alert_manager();
+
+    bool post_alert(const alert& alert_);
+    bool pending() const;
+    std::auto_ptr<alert> get();
+
+    template <class T>
+    bool should_post() const {
+        boost::mutex::scoped_lock lock(m_mutex);
+        if (m_alerts.size() >= m_queue_size_limit) return false;
+        return (m_alert_mask & T::static_category) != 0;
+    }
+
+    template <class T>
+    void post_alert_should(const T& alert) {
+        if (should_post<T>()) {
+            post_alert(alert);
+        }
+    }
+
+    alert const* wait_for_alert(time_duration max_wait);
+
+    void set_alert_mask(boost::uint32_t m) {
+        boost::mutex::scoped_lock lock(m_mutex);
+        m_alert_mask = m;
+    }
+
+    size_t alert_queue_size_limit() const { return m_queue_size_limit; }
+    size_t set_alert_queue_size_limit(size_t queue_size_limit_);
+
+    void set_dispatch_function(boost::function<void(alert const&)> const&);
+
+   private:
+    std::queue<alert*> m_alerts;
+    mutable boost::mutex m_mutex;
+    boost::condition m_condition;
+    boost::uint32_t m_alert_mask;
+    size_t m_queue_size_limit;
+    boost::function<void(alert const&)> m_dispatch;
+    io_service& m_ios;
+};
+
+struct unhandled_alert : std::exception {
+    unhandled_alert() {}
+};
+
+namespace libed2k_detail {
+
+struct void_;
+
+template <class Handler, BOOST_PP_ENUM_PARAMS(LIBED2K_MAX_ALERT_TYPES, class T)>
+void handle_alert_dispatch(const std::auto_ptr<alert>& alert_, const Handler& handler, const std::type_info& typeid_,
+                           T0*, BOOST_PP_ENUM_SHIFTED_BINARY_PARAMS(LIBED2K_MAX_ALERT_TYPES, T, *p)) {
+    if (typeid_ == typeid(T0))
+        handler(*static_cast<T0*>(alert_.get()));
+    else
+        handle_alert_dispatch(alert_, handler, typeid_, BOOST_PP_ENUM_SHIFTED_PARAMS(LIBED2K_MAX_ALERT_TYPES, p),
+                              (void_*)0);
+}
+
+template <class Handler>
+void handle_alert_dispatch(const std::auto_ptr<alert>&, const Handler&, const std::type_info&,
+                           BOOST_PP_ENUM_PARAMS(LIBED2K_MAX_ALERT_TYPES, void_* BOOST_PP_INTERCEPT)) {
+    throw unhandled_alert();
+}
+
+}  // namespace detail
+
+template <BOOST_PP_ENUM_PARAMS_WITH_A_DEFAULT(LIBED2K_MAX_ALERT_TYPES, class T, libed2k_detail::void_)>
+struct handle_alert {
+    template <class Handler>
+    handle_alert(const std::auto_ptr<alert>& alert_, const Handler& handler) {
+#define ALERT_POINTER_TYPE(z, n, text) (BOOST_PP_CAT(T, n)*)0
+
+        libed2k_detail::handle_alert_dispatch(alert_, handler, typeid(*alert_),
+                                              BOOST_PP_ENUM(LIBED2K_MAX_ALERT_TYPES, ALERT_POINTER_TYPE, _));
+
+#undef ALERT_POINTER_TYPE
+    }
+};
+}
+
+#endif  // __LIBED2K_ALERT__

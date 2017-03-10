@@ -47,14 +47,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/config.hpp"
 #include "libed2k/error_code.hpp"
 
-namespace libed2k
-{
+namespace libed2k {
 
-	LIBED2K_EXTRA_EXPORT boost::tuple<std::string, std::string
-		, std::string, int, std::string>
-		parse_url_components(std::string url, error_code& ec);
-
+LIBED2K_EXTRA_EXPORT boost::tuple<std::string, std::string, std::string, int, std::string> parse_url_components(
+    std::string url, error_code& ec);
 }
 
 #endif
-

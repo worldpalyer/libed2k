@@ -40,10 +40,8 @@ namespace libed2k {
 
 class peer_connection;
 
-struct LIBED2K_EXTRA_EXPORT bw_request
-{
-    bw_request(boost::intrusive_ptr<peer_connection> const& pe
-        , int blk, int prio);
+struct LIBED2K_EXTRA_EXPORT bw_request {
+    bw_request(boost::intrusive_ptr<peer_connection> const& pe, int blk, int prio);
 
     boost::intrusive_ptr<peer_connection> peer;
     // 1 is normal prio
@@ -65,8 +63,6 @@ struct LIBED2K_EXTRA_EXPORT bw_request
 
     bandwidth_channel* channel[5];
 };
-
 }
 
 #endif
-

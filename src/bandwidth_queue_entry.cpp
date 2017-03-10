@@ -37,40 +37,28 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/bandwidth_queue_entry.hpp"
 #include "libed2k/peer_connection.hpp"
 
-namespace libed2k
-{
-    bw_request::bw_request(const boost::intrusive_ptr<peer_connection>& pe
-        , int blk, int prio)
-        : peer(pe)
-        , priority(prio)
-        , assigned(0)
-        , request_size(blk)
-        , ttl(20)
-    {
-        LIBED2K_ASSERT(priority > 0);
-        std::memset(channel, 0, sizeof(channel));
-    }
-
-    int bw_request::assign_bandwidth()
-    {
-        LIBED2K_ASSERT(assigned < request_size);
-        int quota = request_size - assigned;
-        LIBED2K_ASSERT(quota >= 0);
-        --ttl;
-        if (quota == 0) return quota;
-
-        for (int j = 0; j < 5 && channel[j]; ++j)
-        {
-            if (channel[j]->throttle() == 0) continue;
-            if (channel[j]->tmp == 0) continue;
-            quota = (std::min)(int(boost::int64_t(channel[j]->distribute_quota)
-                * priority / channel[j]->tmp), quota);
-        }
-        assigned += quota;
-        for (int j = 0; j < 5 && channel[j]; ++j)
-            channel[j]->use_quota(quota);
-        LIBED2K_ASSERT(assigned <= request_size);
-        return quota;
-    }
+namespace libed2k {
+bw_request::bw_request(const boost::intrusive_ptr<peer_connection>& pe, int blk, int prio)
+    : peer(pe), priority(prio), assigned(0), request_size(blk), ttl(20) {
+    LIBED2K_ASSERT(priority > 0);
+    std::memset(channel, 0, sizeof(channel));
 }
 
+int bw_request::assign_bandwidth() {
+    LIBED2K_ASSERT(assigned < request_size);
+    int quota = request_size - assigned;
+    LIBED2K_ASSERT(quota >= 0);
+    --ttl;
+    if (quota == 0) return quota;
+
+    for (int j = 0; j < 5 && channel[j]; ++j) {
+        if (channel[j]->throttle() == 0) continue;
+        if (channel[j]->tmp == 0) continue;
+        quota = (std::min)(int(boost::int64_t(channel[j]->distribute_quota) * priority / channel[j]->tmp), quota);
+    }
+    assigned += quota;
+    for (int j = 0; j < 5 && channel[j]; ++j) channel[j]->use_quota(quota);
+    LIBED2K_ASSERT(assigned <= request_size);
+    return quota;
+}
+}

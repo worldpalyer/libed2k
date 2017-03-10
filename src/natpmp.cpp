@@ -61,19 +61,18 @@ POSSIBILITY OF SUCH DAMAGE.
 
 using namespace libed2k;
 
-natpmp::natpmp(io_service& ios, address const& listen_interface
-    , portmap_callback_t const& cb, log_callback_t const& lcb)
-    : m_callback(cb)
-    , m_log_callback(lcb)
-    , m_currently_mapping(-1)
-    , m_retry_count(0)
-    , m_socket(ios)
-    , m_send_timer(ios)
-    , m_refresh_timer(ios)
-    , m_next_refresh(-1)
-    , m_disabled(false)
-    , m_abort(false)
-{
+natpmp::natpmp(io_service& ios, address const& listen_interface, portmap_callback_t const& cb,
+               log_callback_t const& lcb)
+    : m_callback(cb),
+      m_log_callback(lcb),
+      m_currently_mapping(-1),
+      m_retry_count(0),
+      m_socket(ios),
+      m_send_timer(ios),
+      m_refresh_timer(ios),
+      m_next_refresh(-1),
+      m_disabled(false),
+      m_abort(false) {
     // unfortunately async operations rely on the storage
     // for this array not to be reallocated, by passing
     // around pointers to its elements. so reserve size for now
@@ -81,17 +80,14 @@ natpmp::natpmp(io_service& ios, address const& listen_interface
     rebind(listen_interface);
 }
 
-void natpmp::rebind(address const& listen_interface)
-{
+void natpmp::rebind(address const& listen_interface) {
     mutex::scoped_lock l(m_mutex);
 
     error_code ec;
     address gateway = get_default_gateway(m_socket.get_io_service(), ec);
-    if (ec)
-    {
+    if (ec) {
         char msg[200];
-        snprintf(msg, sizeof(msg), "failed to find default route: %s",
-                 convert_from_native(ec.message()).c_str());
+        snprintf(msg, sizeof(msg), "failed to find default route: %s", convert_from_native(ec.message()).c_str());
         log(msg, l);
         disable(ec, l);
         return;
@@ -104,19 +100,16 @@ void natpmp::rebind(address const& listen_interface)
     m_nat_endpoint = nat_endpoint;
 
     char msg[200];
-    snprintf(msg, sizeof(msg), "found router at: %s",
-             print_address(m_nat_endpoint.address()).c_str());
+    snprintf(msg, sizeof(msg), "found router at: %s", print_address(m_nat_endpoint.address()).c_str());
     log(msg, l);
 
     m_socket.open(udp::v4(), ec);
-    if (ec)
-    {
+    if (ec) {
         disable(ec, l);
         return;
     }
     m_socket.bind(udp::endpoint(address_v4::any(), 0), ec);
-    if (ec)
-    {
+    if (ec) {
         disable(ec, l);
         return;
     }
@@ -124,36 +117,31 @@ void natpmp::rebind(address const& listen_interface)
 #if defined LIBED2K_ASIO_DEBUGGING
     add_outstanding_async("natpmp::on_reply");
 #endif
-    m_socket.async_receive_from(asio::buffer(&m_response_buffer, 16),
-                                m_remote, boost::bind(&natpmp::on_reply, self(), _1, _2));
+    m_socket.async_receive_from(asio::buffer(&m_response_buffer, 16), m_remote,
+                                boost::bind(&natpmp::on_reply, self(), _1, _2));
     send_get_ip_address_request(l);
 
-    for (std::vector<mapping_t>::iterator i = m_mappings.begin(), end(m_mappings.end()); i != end; ++i)
-    {
-        if (i->protocol != none
-            || i->action != mapping_t::action_none)
-            continue;
+    for (std::vector<mapping_t>::iterator i = m_mappings.begin(), end(m_mappings.end()); i != end; ++i) {
+        if (i->protocol != none || i->action != mapping_t::action_none) continue;
         i->action = mapping_t::action_add;
         update_mapping(i - m_mappings.begin(), l);
     }
 }
 
-void natpmp::send_get_ip_address_request(mutex::scoped_lock& l)
-{
+void natpmp::send_get_ip_address_request(mutex::scoped_lock& l) {
     using namespace libed2k::detail;
 
     char buf[2];
     char* out = buf;
-    write_uint8(0, out); // NAT-PMP version
-    write_uint8(0, out); // public IP address request opcode
+    write_uint8(0, out);  // NAT-PMP version
+    write_uint8(0, out);  // public IP address request opcode
     log("==> get public IP address", l);
 
     error_code ec;
     m_socket.send_to(asio::buffer(buf, sizeof(buf)), m_nat_endpoint, 0, ec);
 }
 
-bool natpmp::get_mapping(int index, int& local_port, int& external_port, int& protocol) const
-{
+bool natpmp::get_mapping(int index, int& local_port, int& external_port, int& protocol) const {
     mutex::scoped_lock l(m_mutex);
 
     LIBED2K_ASSERT(index < int(m_mappings.size()) && index >= 0);
@@ -166,19 +154,16 @@ bool natpmp::get_mapping(int index, int& local_port, int& external_port, int& pr
     return true;
 }
 
-void natpmp::log(char const* msg, mutex::scoped_lock& l)
-{
+void natpmp::log(char const* msg, mutex::scoped_lock& l) {
     l.unlock();
     m_log_callback(msg);
     l.lock();
 }
 
-void natpmp::disable(error_code const& ec, mutex::scoped_lock& l)
-{
+void natpmp::disable(error_code const& ec, mutex::scoped_lock& l) {
     m_disabled = true;
 
-    for (std::vector<mapping_t>::iterator i = m_mappings.begin(), end(m_mappings.end()); i != end; ++i)
-    {
+    for (std::vector<mapping_t>::iterator i = m_mappings.begin(), end(m_mappings.end()); i != end; ++i) {
         if (i->protocol == none) continue;
         i->protocol = none;
         int index = i - m_mappings.begin();
@@ -189,8 +174,7 @@ void natpmp::disable(error_code const& ec, mutex::scoped_lock& l)
     close_impl(l);
 }
 
-void natpmp::delete_mapping(int index)
-{
+void natpmp::delete_mapping(int index) {
     mutex::scoped_lock l(m_mutex);
 
     LIBED2K_ASSERT(index < int(m_mappings.size()) && index >= 0);
@@ -198,8 +182,7 @@ void natpmp::delete_mapping(int index)
     mapping_t& m = m_mappings[index];
 
     if (m.protocol == none) return;
-    if (!m.map_sent)
-    {
+    if (!m.map_sent) {
         m.action = mapping_t::action_none;
         m.protocol = none;
         return;
@@ -209,16 +192,14 @@ void natpmp::delete_mapping(int index)
     update_mapping(index, l);
 }
 
-int natpmp::add_mapping(protocol_type p, int external_port, int local_port)
-{
+int natpmp::add_mapping(protocol_type p, int external_port, int local_port) {
     mutex::scoped_lock l(m_mutex);
 
     if (m_disabled) return -1;
 
-    std::vector<mapping_t>::iterator i = std::find_if(m_mappings.begin()
-        , m_mappings.end(), boost::bind(&mapping_t::protocol, _1) == int(none));
-    if (i == m_mappings.end())
-    {
+    std::vector<mapping_t>::iterator i =
+        std::find_if(m_mappings.begin(), m_mappings.end(), boost::bind(&mapping_t::protocol, _1) == int(none));
+    if (i == m_mappings.end()) {
         m_mappings.push_back(mapping_t());
         i = m_mappings.end() - 1;
     }
@@ -231,16 +212,14 @@ int natpmp::add_mapping(protocol_type p, int external_port, int local_port)
 
 #ifdef NATPMP_LOG
     ptime now = time_now();
-    for (std::vector<mapping_t>::iterator m = m_mappings.begin(), end(m_mappings.end()); m != end; ++m)
-    {
+    for (std::vector<mapping_t>::iterator m = m_mappings.begin(), end(m_mappings.end()); m != end; ++m) {
         std::cout << " ADD MAPPING: " << mapping_index << " [ "
-            "proto: " << (i->protocol == none ? "none" : i->protocol == tcp ? "tcp" : "udp")
-                  << " port: " << i->external_port
-                  << " local-port: " << i->local_port
-                  << " action: " << (i->action == mapping_t::action_none ?
-                                     "none" : i->action == mapping_t::action_add ? "add" : "delete")
-                  << " ttl: " << total_seconds(i->expires - now)
-                  << " ]" << std::endl;
+                                                          "proto: "
+                  << (i->protocol == none ? "none" : i->protocol == tcp ? "tcp" : "udp")
+                  << " port: " << i->external_port << " local-port: " << i->local_port << " action: "
+                  << (i->action == mapping_t::action_none ? "none"
+                                                          : i->action == mapping_t::action_add ? "add" : "delete")
+                  << " ttl: " << total_seconds(i->expires - now) << " ]" << std::endl;
     }
 #endif
 
@@ -248,25 +227,20 @@ int natpmp::add_mapping(protocol_type p, int external_port, int local_port)
     return mapping_index;
 }
 
-void natpmp::try_next_mapping(int i, mutex::scoped_lock& l)
-{
+void natpmp::try_next_mapping(int i, mutex::scoped_lock& l) {
 #ifdef NATPMP_LOG
     ptime now = time_now();
-    for (std::vector<mapping_t>::iterator m = m_mappings.begin()
-        , end(m_mappings.end()); m != end; ++m)
-    {
-    std::cout << "     " << (m - m_mappings.begin()) << " [ "
-        "proto: " << (m->protocol == none ? "none" : m->protocol == tcp ? "tcp" : "udp")
-              << " port: " << m->external_port
-              << " local-port: " << m->local_port
-              << " action: " << (m->action == mapping_t::action_none ?
-                                 "none" : m->action == mapping_t::action_add ? "add" : "delete")
-              << " ttl: " << total_seconds(m->expires - now)
-              << " ]" << std::endl;
+    for (std::vector<mapping_t>::iterator m = m_mappings.begin(), end(m_mappings.end()); m != end; ++m) {
+        std::cout << "     " << (m - m_mappings.begin()) << " [ "
+                                                            "proto: "
+                  << (m->protocol == none ? "none" : m->protocol == tcp ? "tcp" : "udp")
+                  << " port: " << m->external_port << " local-port: " << m->local_port << " action: "
+                  << (m->action == mapping_t::action_none ? "none"
+                                                          : m->action == mapping_t::action_add ? "add" : "delete")
+                  << " ttl: " << total_seconds(m->expires - now) << " ]" << std::endl;
     }
 #endif
-    if (i < int(m_mappings.size()) - 1)
-    {
+    if (i < int(m_mappings.size()) - 1) {
         update_mapping(i + 1, l);
         return;
     }
@@ -274,16 +248,14 @@ void natpmp::try_next_mapping(int i, mutex::scoped_lock& l)
     std::vector<mapping_t>::iterator m = std::find_if(
         m_mappings.begin(), m_mappings.end(), boost::bind(&mapping_t::action, _1) != int(mapping_t::action_none));
 
-    if (m == m_mappings.end())
-    {
-        if (m_abort)
-        {
+    if (m == m_mappings.end()) {
+        if (m_abort) {
             error_code ec;
             m_send_timer.cancel(ec);
             m_socket.close(ec);
         }
 #ifdef NATPMP_LOG
-        std::cout << "     done" << (m_abort?" shutting down":"") << std::endl;
+        std::cout << "     done" << (m_abort ? " shutting down" : "") << std::endl;
 #endif
         return;
     }
@@ -295,31 +267,26 @@ void natpmp::try_next_mapping(int i, mutex::scoped_lock& l)
     update_mapping(m - m_mappings.begin(), l);
 }
 
-void natpmp::update_mapping(int i, mutex::scoped_lock& l)
-{
-    if (i == int(m_mappings.size()))
-    {
-        if (m_abort)
-        {
+void natpmp::update_mapping(int i, mutex::scoped_lock& l) {
+    if (i == int(m_mappings.size())) {
+        if (m_abort) {
             error_code ec;
             m_send_timer.cancel(ec);
             m_socket.close(ec);
         }
 #ifdef NATPMP_LOG
-        std::cout << "     done" << (m_abort?" shutting down":"") << std::endl;
+        std::cout << "     done" << (m_abort ? " shutting down" : "") << std::endl;
 #endif
         return;
     }
 
     natpmp::mapping_t& m = m_mappings[i];
-    if (m.action == mapping_t::action_none || m.protocol == none)
-    {
+    if (m.action == mapping_t::action_none || m.protocol == none) {
         try_next_mapping(i, l);
         return;
     }
 
-    if (m_currently_mapping == -1)
-    {
+    if (m_currently_mapping == -1) {
         // the socket is not currently in use
         // send out a mapping request
         m_retry_count = 0;
@@ -327,8 +294,7 @@ void natpmp::update_mapping(int i, mutex::scoped_lock& l)
     }
 }
 
-void natpmp::send_map_request(int i, mutex::scoped_lock& l)
-{
+void natpmp::send_map_request(int i, mutex::scoped_lock& l) {
     using namespace libed2k::detail;
 
     LIBED2K_ASSERT(m_currently_mapping == -1 || m_currently_mapping == i);
@@ -337,37 +303,34 @@ void natpmp::send_map_request(int i, mutex::scoped_lock& l)
     LIBED2K_ASSERT(m.action != mapping_t::action_none);
     char buf[12];
     char* out = buf;
-    write_uint8(0, out); // NAT-PMP version
-    write_uint8(m.protocol, out); // map "protocol"
-    write_uint16(0, out); // reserved
-    write_uint16(m.local_port, out); // private port
-    write_uint16(m.external_port, out); // requested public port
+    write_uint8(0, out);                 // NAT-PMP version
+    write_uint8(m.protocol, out);        // map "protocol"
+    write_uint16(0, out);                // reserved
+    write_uint16(m.local_port, out);     // private port
+    write_uint16(m.external_port, out);  // requested public port
     int ttl = m.action == mapping_t::action_add ? 3600 : 0;
-    write_uint32(ttl, out); // port mapping lifetime
+    write_uint32(ttl, out);  // port mapping lifetime
 
     char msg[200];
-    snprintf(msg, sizeof(msg), "==> port map [ mapping: %d action: %s"
+    snprintf(msg, sizeof(msg),
+             "==> port map [ mapping: %d action: %s"
              " proto: %s local: %u external: %u ttl: %u ]",
-             i, m.action == mapping_t::action_add ? "add" : "delete",
-             m.protocol == udp ? "udp" : "tcp",
-             m.local_port, m.external_port, ttl);
+             i, m.action == mapping_t::action_add ? "add" : "delete", m.protocol == udp ? "udp" : "tcp", m.local_port,
+             m.external_port, ttl);
     log(msg, l);
 
     error_code ec;
     m_socket.send_to(asio::buffer(buf, sizeof(buf)), m_nat_endpoint, 0, ec);
     m.map_sent = true;
     m.outstanding_request = true;
-    if (m_abort)
-    {
+    if (m_abort) {
         // when we're shutting down, ignore the
         // responses and just remove all mappings
         // immediately
         m_currently_mapping = -1;
         m.action = mapping_t::action_none;
         try_next_mapping(i, l);
-    }
-    else
-    {
+    } else {
 #if defined LIBED2K_ASIO_DEBUGGING
         add_outstanding_async("natpmp::resend_request");
 #endif
@@ -378,8 +341,7 @@ void natpmp::send_map_request(int i, mutex::scoped_lock& l)
     }
 }
 
-void natpmp::resend_request(int i, error_code const& e)
-{
+void natpmp::resend_request(int i, error_code const& e) {
 #if defined LIBED2K_ASIO_DEBUGGING
     complete_async("natpmp::resend_request");
 #endif
@@ -389,8 +351,7 @@ void natpmp::resend_request(int i, error_code const& e)
 
     // if we're shutting down, don't retry, just move on
     // to the next mapping
-    if (m_retry_count >= 9 || m_abort)
-    {
+    if (m_retry_count >= 9 || m_abort) {
         m_currently_mapping = -1;
         m_mappings[i].action = mapping_t::action_none;
         // try again in two hours
@@ -401,8 +362,7 @@ void natpmp::resend_request(int i, error_code const& e)
     send_map_request(i, l);
 }
 
-void natpmp::on_reply(error_code const& e, std::size_t bytes_transferred)
-{
+void natpmp::on_reply(error_code const& e, std::size_t bytes_transferred) {
     mutex::scoped_lock l(m_mutex);
 
 #if defined LIBED2K_ASIO_DEBUGGING
@@ -410,11 +370,9 @@ void natpmp::on_reply(error_code const& e, std::size_t bytes_transferred)
 #endif
 
     using namespace libed2k::detail;
-    if (e)
-    {
+    if (e) {
         char msg[200];
-        snprintf(msg, sizeof(msg), "error on receiving reply: %s",
-                 convert_from_native(e.message()).c_str());
+        snprintf(msg, sizeof(msg), "error on receiving reply: %s", convert_from_native(e.message()).c_str());
         log(msg, l);
         return;
     }
@@ -427,22 +385,20 @@ void natpmp::on_reply(error_code const& e, std::size_t bytes_transferred)
     char msg_buf[16];
     memcpy(msg_buf, m_response_buffer, bytes_transferred);
 
-    m_socket.async_receive_from(asio::buffer(&m_response_buffer, 16),
-                                m_remote, boost::bind(&natpmp::on_reply, self(), _1, _2));
+    m_socket.async_receive_from(asio::buffer(&m_response_buffer, 16), m_remote,
+                                boost::bind(&natpmp::on_reply, self(), _1, _2));
 
     // simulate packet loss
-/*
-    if ((random() % 2) == 0)
-    {
-        log(" simulating drop", l);
-        return;
-    }
-*/
-    if (m_remote != m_nat_endpoint)
-    {
+    /*
+        if ((random() % 2) == 0)
+        {
+            log(" simulating drop", l);
+            return;
+        }
+    */
+    if (m_remote != m_nat_endpoint) {
         char msg[200];
-        snprintf(msg, sizeof(msg), "received packet from wrong IP: %s",
-                 print_endpoint(m_remote).c_str());
+        snprintf(msg, sizeof(msg), "received packet from wrong IP: %s", print_endpoint(m_remote).c_str());
         log(msg, l);
         return;
     }
@@ -450,8 +406,7 @@ void natpmp::on_reply(error_code const& e, std::size_t bytes_transferred)
     error_code ec;
     m_send_timer.cancel(ec);
 
-    if (bytes_transferred < 12)
-    {
+    if (bytes_transferred < 12) {
         char msg[200];
         snprintf(msg, sizeof(msg), "received packet of invalid size: %d", int(bytes_transferred));
         log(msg, l);
@@ -464,8 +419,7 @@ void natpmp::on_reply(error_code const& e, std::size_t bytes_transferred)
     int result = read_uint16(in);
     int time = read_uint32(in);
 
-    if (cmd == 128)
-    {
+    if (cmd == 128) {
         // public IP request response
         m_external_ip = read_v4_address(in);
 
@@ -473,11 +427,9 @@ void natpmp::on_reply(error_code const& e, std::size_t bytes_transferred)
         snprintf(msg, sizeof(msg), "<== public IP address [ %s ]", print_address(m_external_ip).c_str());
         log(msg, l);
         return;
-
     }
 
-    if (bytes_transferred < 16)
-    {
+    if (bytes_transferred < 16) {
         char msg[200];
         snprintf(msg, sizeof(msg), "received packet of invalid size: %d", int(bytes_transferred));
         log(msg, l);
@@ -488,26 +440,24 @@ void natpmp::on_reply(error_code const& e, std::size_t bytes_transferred)
     int public_port = read_uint16(in);
     int lifetime = read_uint32(in);
 
-    (void)time; // to remove warning
+    (void)time;  // to remove warning
 
-    int protocol = (cmd - 128 == 1)?udp:tcp;
+    int protocol = (cmd - 128 == 1) ? udp : tcp;
 
     char msg[200];
-    int num_chars = snprintf(msg, sizeof(msg), "<== port map ["
-        " protocol: %s local: %u external: %u ttl: %u ]"
-        , (cmd - 128 == 1 ? "udp" : "tcp")
-        , private_port, public_port, lifetime);
+    int num_chars = snprintf(msg, sizeof(msg),
+                             "<== port map ["
+                             " protocol: %s local: %u external: %u ttl: %u ]",
+                             (cmd - 128 == 1 ? "udp" : "tcp"), private_port, public_port, lifetime);
 
-    if (version != 0)
-    {
+    if (version != 0) {
         snprintf(msg + num_chars, sizeof(msg) - num_chars, "unexpected version: %u", version);
         log(msg, l);
     }
 
     mapping_t* m = 0;
     int index = -1;
-    for (std::vector<mapping_t>::iterator i = m_mappings.begin(), end(m_mappings.end()); i != end; ++i)
-    {
+    for (std::vector<mapping_t>::iterator i = m_mappings.begin(), end(m_mappings.end()); i != end; ++i) {
         if (private_port != i->local_port) continue;
         if (protocol != i->protocol) continue;
         if (!i->map_sent) continue;
@@ -517,8 +467,7 @@ void natpmp::on_reply(error_code const& e, std::size_t bytes_transferred)
         break;
     }
 
-    if (m == 0)
-    {
+    if (m == 0) {
         snprintf(msg + num_chars, sizeof(msg) - num_chars, " not found in map table");
         log(msg, l);
         return;
@@ -527,22 +476,17 @@ void natpmp::on_reply(error_code const& e, std::size_t bytes_transferred)
 
     log(msg, l);
 
-    if (public_port == 0 || lifetime == 0)
-    {
+    if (public_port == 0 || lifetime == 0) {
         // this means the mapping was
         // successfully closed
         m->protocol = none;
-    }
-    else
-    {
+    } else {
         m->expires = time_now() + seconds(int(lifetime * 0.7f));
         m->external_port = public_port;
     }
 
-    if (result != 0)
-    {
-        int errors[] =
-        {
+    if (result != 0) {
+        int errors[] = {
             errors::unsupported_protocol_version,
             errors::natpmp_not_authorized,
             errors::network_failure,
@@ -556,9 +500,7 @@ void natpmp::on_reply(error_code const& e, std::size_t bytes_transferred)
         l.unlock();
         m_callback(index, address(), 0, error_code(ev, get_libed2k_category()));
         l.lock();
-    }
-    else if (m->action == mapping_t::action_add)
-    {
+    } else if (m->action == mapping_t::action_add) {
         l.unlock();
         m_callback(index, m_external_ip, m->external_port, error_code(errors::no_error, get_libed2k_category()));
         l.lock();
@@ -573,44 +515,35 @@ void natpmp::on_reply(error_code const& e, std::size_t bytes_transferred)
     try_next_mapping(index, l);
 }
 
-void natpmp::update_expiration_timer(mutex::scoped_lock& l)
-{
+void natpmp::update_expiration_timer(mutex::scoped_lock& l) {
     if (m_abort) return;
 
     ptime now = time_now() + milliseconds(100);
 #ifdef NATPMP_LOG
     std::cout << time_now_string() << " update_expiration_timer " << std::endl;
-    for (std::vector<mapping_t>::iterator i = m_mappings.begin()
-        , end(m_mappings.end()); i != end; ++i)
-    {
-    std::cout << "     " << (i - m_mappings.begin()) << " [ "
-        "proto: " << (i->protocol == none ? "none" : i->protocol == tcp ? "tcp" : "udp")
-              << " port: " << i->external_port
-              << " local-port: " << i->local_port
-              << " action: " << (i->action == mapping_t::action_none ?
-                                 "none" : i->action == mapping_t::action_add ? "add" : "delete")
-              << " ttl: " << total_seconds(i->expires - now)
-              << " ]" << std::endl;
+    for (std::vector<mapping_t>::iterator i = m_mappings.begin(), end(m_mappings.end()); i != end; ++i) {
+        std::cout << "     " << (i - m_mappings.begin()) << " [ "
+                                                            "proto: "
+                  << (i->protocol == none ? "none" : i->protocol == tcp ? "tcp" : "udp")
+                  << " port: " << i->external_port << " local-port: " << i->local_port << " action: "
+                  << (i->action == mapping_t::action_none ? "none"
+                                                          : i->action == mapping_t::action_add ? "add" : "delete")
+                  << " ttl: " << total_seconds(i->expires - now) << " ]" << std::endl;
     }
 #endif
     ptime min_expire = now + seconds(3600);
     int min_index = -1;
-    for (std::vector<mapping_t>::iterator i = m_mappings.begin()
-        , end(m_mappings.end()); i != end; ++i)
-    {
+    for (std::vector<mapping_t>::iterator i = m_mappings.begin(), end(m_mappings.end()); i != end; ++i) {
         if (i->protocol == none || i->action != mapping_t::action_none) continue;
         int index = i - m_mappings.begin();
-        if (i->expires < now)
-        {
+        if (i->expires < now) {
             char msg[200];
             snprintf(msg, sizeof(msg), "mapping %u expired", index);
             log(msg, l);
             i->action = mapping_t::action_add;
             if (m_next_refresh == index) m_next_refresh = -1;
             update_mapping(index, l);
-        }
-        else if (i->expires < min_expire)
-        {
+        } else if (i->expires < min_expire) {
             min_expire = i->expires;
             min_index = index;
         }
@@ -619,13 +552,11 @@ void natpmp::update_expiration_timer(mutex::scoped_lock& l)
     // this is already the mapping we're waiting for
     if (m_next_refresh == min_index) return;
 
-    if (min_index >= 0)
-    {
+    if (min_index >= 0) {
 #ifdef NATPMP_LOG
         std::cout << time_now_string() << " next expiration ["
-            " i: " << min_index
-                  << " ttl: " << total_seconds(min_expire - time_now())
-                  << " ]" << std::endl;
+                                          " i: "
+                  << min_index << " ttl: " << total_seconds(min_expire - time_now()) << " ]" << std::endl;
 #endif
         error_code ec;
         if (m_next_refresh >= 0) m_refresh_timer.cancel(ec);
@@ -639,8 +570,7 @@ void natpmp::update_expiration_timer(mutex::scoped_lock& l)
     }
 }
 
-void natpmp::mapping_expired(error_code const& e, int i)
-{
+void natpmp::mapping_expired(error_code const& e, int i) {
 #if defined LIBED2K_ASIO_DEBUGGING
     complete_async("natpmp::mapping_expired");
 #endif
@@ -654,14 +584,12 @@ void natpmp::mapping_expired(error_code const& e, int i)
     update_mapping(i, l);
 }
 
-void natpmp::close()
-{
+void natpmp::close() {
     mutex::scoped_lock l(m_mutex);
     close_impl(l);
 }
 
-void natpmp::close_impl(mutex::scoped_lock& l)
-{
+void natpmp::close_impl(mutex::scoped_lock& l) {
     m_abort = true;
     log("closing", l);
 #ifdef NATPMP_LOG
@@ -669,17 +597,15 @@ void natpmp::close_impl(mutex::scoped_lock& l)
     ptime now = time_now();
 #endif
     if (m_disabled) return;
-    for (std::vector<mapping_t>::iterator i = m_mappings.begin(), end(m_mappings.end()); i != end; ++i)
-    {
+    for (std::vector<mapping_t>::iterator i = m_mappings.begin(), end(m_mappings.end()); i != end; ++i) {
 #ifdef NATPMP_LOG
         std::cout << "     " << (i - m_mappings.begin()) << " [ "
-            "proto: " << (i->protocol == none ? "none" : i->protocol == tcp ? "tcp" : "udp")
-                  << " port: " << i->external_port
-                  << " local-port: " << i->local_port
-                  << " action: " << (i->action == mapping_t::action_none ?
-                                     "none" : i->action == mapping_t::action_add ? "add" : "delete")
-                  << " ttl: " << total_seconds(i->expires - now)
-                  << " ]" << std::endl;
+                                                            "proto: "
+                  << (i->protocol == none ? "none" : i->protocol == tcp ? "tcp" : "udp")
+                  << " port: " << i->external_port << " local-port: " << i->local_port << " action: "
+                  << (i->action == mapping_t::action_none ? "none"
+                                                          : i->action == mapping_t::action_add ? "add" : "delete")
+                  << " ttl: " << total_seconds(i->expires - now) << " ]" << std::endl;
 #endif
         if (i->protocol == none) continue;
         i->action = mapping_t::action_delete;

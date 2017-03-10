@@ -25,229 +25,202 @@
 #include "libed2k/deadline_timer.hpp"
 #include "libed2k/bandwidth_limit.hpp"
 
-namespace libed2k{
+namespace libed2k {
 
-    enum{ header_size = sizeof( libed2k_header) };
+enum { header_size = sizeof(libed2k_header) };
 
-    namespace aux{ class session_impl; }
+namespace aux {
+class session_impl;
+}
 
+class base_connection : public intrusive_ptr_base<base_connection>, public boost::noncopyable {
+    friend class aux::session_impl;
 
+   public:
+    base_connection(aux::session_impl& ses);
+    base_connection(aux::session_impl& ses, boost::shared_ptr<tcp::socket> s, const tcp::endpoint& remote);
+    virtual ~base_connection();
 
-    class base_connection: public intrusive_ptr_base<base_connection>,
-                           public boost::noncopyable
-    {
-        friend class aux::session_impl;
+    virtual void disconnect(const error_code& ec, int error = 0);
+    bool is_disconnecting() const { return m_disconnecting; }
 
-    public:
+    /** connection closed when his socket is not opened */
+    bool is_closed() const { return !m_socket || !m_socket->is_open(); }
+    const tcp::endpoint& remote() const { return m_remote; }
+    boost::shared_ptr<tcp::socket> socket() { return m_socket; }
 
-        base_connection(aux::session_impl& ses);
-        base_connection(aux::session_impl& ses, boost::shared_ptr<tcp::socket> s,
-                        const tcp::endpoint& remote);
-        virtual ~base_connection();
+    const stat& statistics() const { return m_statistics; }
 
-        virtual void disconnect(const error_code& ec, int error = 0);
-        bool is_disconnecting() const { return m_disconnecting; }
+    typedef boost::iostreams::basic_array_source<char> Device;
 
-        /** connection closed when his socket is not opened */
-        bool is_closed() const { return !m_socket || !m_socket->is_open(); }
-        const tcp::endpoint& remote() const { return m_remote; }
-        boost::shared_ptr<tcp::socket> socket() { return m_socket; }
+    enum channels { upload_channel, download_channel, num_channels };
 
-        const stat& statistics() const { return m_statistics; }
+   protected:
+    // constructor method
+    void reset();
 
-        typedef boost::iostreams::basic_array_source<char> Device;
+    virtual void do_read();
+    virtual void do_write(int quota = (std::numeric_limits<int>::max)());
 
-        enum channels
-        {
-            upload_channel,
-            download_channel,
-            num_channels
-        };
+    template <typename T>
+    void write_struct(const T& t) {
+        write_message(make_message(t));
+    }
 
-    protected:
-        // constructor method
-        void reset();
+    void write_message(const message& msg);
 
-        virtual void do_read();
-        virtual void do_write(int quota = (std::numeric_limits<int>::max)());
+    void copy_send_buffer(const char* buf, int size);
 
-        template<typename T>
-        void write_struct(const T& t) { write_message(make_message(t)); }
+    template <class Destructor>
+    void append_send_buffer(char* buffer, int size, Destructor const& destructor) {
+        m_send_buffer.append_buffer(buffer, size, size, destructor);
+    }
 
-        void write_message(const message& msg);
+    int send_buffer_size() const { return m_send_buffer.size(); }
+    int send_buffer_capacity() const { return m_send_buffer.capacity(); }
 
-        void copy_send_buffer(const char* buf, int size);
+    virtual void on_timeout(const error_code& e);
+    virtual void on_sent(const error_code& e, std::size_t bytes_transferred) = 0;
 
-        template <class Destructor>
-        void append_send_buffer(char* buffer, int size, Destructor const& destructor)
-        { m_send_buffer.append_buffer(buffer, size, size, destructor); }
+    /**
+     * call when socket got packets header
+     */
+    void on_read_header(const error_code& error, size_t nSize);
 
-        int send_buffer_size() const { return m_send_buffer.size(); }
-        int send_buffer_capacity() const { return m_send_buffer.capacity(); }
+    /**
+     * call when socket got packets body and call users call back
+     */
+    void on_read_packet(const error_code& error, size_t nSize);
 
-        virtual void on_timeout(const error_code& e);
-        virtual void on_sent(const error_code& e, std::size_t bytes_transferred) = 0;
+    /**
+     * order write handler - executed while message order not empty
+     */
+    void on_write(const error_code& error, size_t nSize);
 
-        /**
-         * call when socket got packets header
-         */
-        void on_read_header(const error_code& error, size_t nSize);
+    /**
+     * deadline timer handler
+     */
+    void check_deadline();
 
-        /**
-         * call when socket got packets body and call users call back
-         */
-        void on_read_packet(const error_code& error, size_t nSize);
-
-        /**
-         * order write handler - executed while message order not empty
-         */
-        void on_write(const error_code& error, size_t nSize);
-
-        /**
-         * deadline timer handler
-         */
-        void check_deadline();
-
-        /**
-         * will call from external handlers for extract buffer into structure
-         * on error return false
-         */
-        template<typename T>
-        bool decode_packet(T& t)
-        {
-            try
-            {
-                if (!m_in_container.empty())
-                {
-                    boost::iostreams::stream_buffer<base_connection::Device> buffer(
-                        &m_in_container[0], m_in_header.m_size - 1);
-                    std::istream in_array_stream(&buffer);
-                    archive::ed2k_iarchive ia(in_array_stream);
-                    ia >> t;
-                }
+    /**
+     * will call from external handlers for extract buffer into structure
+     * on error return false
+     */
+    template <typename T>
+    bool decode_packet(T& t) {
+        try {
+            if (!m_in_container.empty()) {
+                boost::iostreams::stream_buffer<base_connection::Device> buffer(&m_in_container[0],
+                                                                                m_in_header.m_size - 1);
+                std::istream in_array_stream(&buffer);
+                archive::ed2k_iarchive ia(in_array_stream);
+                ia >> t;
             }
-            catch(libed2k_exception& e)
-            {
-                DBG("Error on conversion " << e.what());
-                return (false);
-            }
-
-            return (true);
+        } catch (libed2k_exception& e) {
+            DBG("Error on conversion " << e.what());
+            return (false);
         }
 
-        template <typename Self>
-        boost::intrusive_ptr<Self> self_as()
-        { return boost::intrusive_ptr<Self>((Self*)this); }
+        return (true);
+    }
 
-        template <typename Self>
-        boost::intrusive_ptr<const Self> self_as() const
-        { return boost::intrusive_ptr<const Self>((const Self*)this); }
+    template <typename Self>
+    boost::intrusive_ptr<Self> self_as() {
+        return boost::intrusive_ptr<Self>((Self*)this);
+    }
 
-        /**
-         * handler on receive data packet
-         * @param read data buffer
-         * @param error code
-         */
-        typedef boost::function<void (const error_code&)> packet_handler;
+    template <typename Self>
+    boost::intrusive_ptr<const Self> self_as() const {
+        return boost::intrusive_ptr<const Self>((const Self*)this);
+    }
 
-        // handler storage type - first argument opcode + protocol
-        typedef std::map<std::pair<proto_type, proto_type>, packet_handler> handler_map;
+    /**
+     * handler on receive data packet
+     * @param read data buffer
+     * @param error code
+     */
+    typedef boost::function<void(const error_code&)> packet_handler;
 
-        void add_handler(std::pair<proto_type, proto_type> ptype, packet_handler handler);
+    // handler storage type - first argument opcode + protocol
+    typedef std::map<std::pair<proto_type, proto_type>, packet_handler> handler_map;
 
-        aux::session_impl& m_ses;
-        boost::shared_ptr<tcp::socket> m_socket;
-        deadline_timer m_deadline;     //!< deadline timer for reading operations
-        libed2k_header m_in_header;    //!< incoming message header
-        socket_buffer m_in_container; //!< buffer for incoming messages
-        socket_buffer m_in_gzip_container; //!< buffer for compressed data
-        chained_buffer m_send_buffer;  //!< buffer for outgoing messages
-        tcp::endpoint m_remote;
+    void add_handler(std::pair<proto_type, proto_type> ptype, packet_handler handler);
 
-        // upload and download channel state
-        char m_channel_state[2];
+    aux::session_impl& m_ses;
+    boost::shared_ptr<tcp::socket> m_socket;
+    deadline_timer m_deadline;          //!< deadline timer for reading operations
+    libed2k_header m_in_header;         //!< incoming message header
+    socket_buffer m_in_container;       //!< buffer for incoming messages
+    socket_buffer m_in_gzip_container;  //!< buffer for compressed data
+    chained_buffer m_send_buffer;       //!< buffer for outgoing messages
+    tcp::endpoint m_remote;
 
-        // this is true if this connection has been added
-        // to the list of connections that will be closed.
-        bool m_disconnecting;
+    // upload and download channel state
+    char m_channel_state[2];
 
-        handler_map m_handlers;
+    // this is true if this connection has been added
+    // to the list of connections that will be closed.
+    bool m_disconnecting;
 
-        // statistics about upload and download speeds
-        // and total amount of uploads and downloads for
-        // this connection
-        stat m_statistics;
+    handler_map m_handlers;
 
-        //
-        // Custom memory allocation for asynchronous operations
-        //
-        template <std::size_t Size>
-        class handler_storage
-        {
-        public:
-            boost::aligned_storage<Size> bytes;
-        };
+    // statistics about upload and download speeds
+    // and total amount of uploads and downloads for
+    // this connection
+    stat m_statistics;
 
-        handler_storage<LIBED2K_READ_HANDLER_MAX_SIZE> m_read_handler_storage;
-        handler_storage<LIBED2K_WRITE_HANDLER_MAX_SIZE> m_write_handler_storage;
-
-        template <class Handler, std::size_t Size>
-        class allocating_handler
-        {
-        public:
-            allocating_handler(Handler const& h, handler_storage<Size>& s):
-                handler(h), storage(s)
-            {}
-
-            template <class A0>
-            void operator()(A0 const& a0) const
-            {
-                handler(a0);
-            }
-
-            template <class A0, class A1>
-            void operator()(A0 const& a0, A1 const& a1) const
-            {
-                handler(a0, a1);
-            }
-
-            template <class A0, class A1, class A2>
-            void operator()(A0 const& a0, A1 const& a1, A2 const& a2) const
-            {
-                handler(a0, a1, a2);
-            }
-
-            friend void* asio_handler_allocate(
-                std::size_t size, allocating_handler<Handler, Size>* ctx)
-            {
-                return &ctx->storage.bytes;
-            }
-
-            friend void asio_handler_deallocate(
-                void*, std::size_t, allocating_handler<Handler, Size>* ctx)
-            {
-            }
-
-            Handler handler;
-            handler_storage<Size>& storage;
-        };
-
-        template <class Handler>
-        allocating_handler<Handler, LIBED2K_READ_HANDLER_MAX_SIZE>
-        make_read_handler(Handler const& handler)
-        {
-            return allocating_handler<Handler, LIBED2K_READ_HANDLER_MAX_SIZE>(
-                handler, m_read_handler_storage);
-        }
-
-        template <class Handler>
-        allocating_handler<Handler, LIBED2K_WRITE_HANDLER_MAX_SIZE>
-        make_write_handler(Handler const& handler)
-        {
-            return allocating_handler<Handler, LIBED2K_WRITE_HANDLER_MAX_SIZE>(
-                handler, m_write_handler_storage);
-        }
+    //
+    // Custom memory allocation for asynchronous operations
+    //
+    template <std::size_t Size>
+    class handler_storage {
+       public:
+        boost::aligned_storage<Size> bytes;
     };
+
+    handler_storage<LIBED2K_READ_HANDLER_MAX_SIZE> m_read_handler_storage;
+    handler_storage<LIBED2K_WRITE_HANDLER_MAX_SIZE> m_write_handler_storage;
+
+    template <class Handler, std::size_t Size>
+    class allocating_handler {
+       public:
+        allocating_handler(Handler const& h, handler_storage<Size>& s) : handler(h), storage(s) {}
+
+        template <class A0>
+        void operator()(A0 const& a0) const {
+            handler(a0);
+        }
+
+        template <class A0, class A1>
+        void operator()(A0 const& a0, A1 const& a1) const {
+            handler(a0, a1);
+        }
+
+        template <class A0, class A1, class A2>
+        void operator()(A0 const& a0, A1 const& a1, A2 const& a2) const {
+            handler(a0, a1, a2);
+        }
+
+        friend void* asio_handler_allocate(std::size_t size, allocating_handler<Handler, Size>* ctx) {
+            return &ctx->storage.bytes;
+        }
+
+        friend void asio_handler_deallocate(void*, std::size_t, allocating_handler<Handler, Size>* ctx) {}
+
+        Handler handler;
+        handler_storage<Size>& storage;
+    };
+
+    template <class Handler>
+    allocating_handler<Handler, LIBED2K_READ_HANDLER_MAX_SIZE> make_read_handler(Handler const& handler) {
+        return allocating_handler<Handler, LIBED2K_READ_HANDLER_MAX_SIZE>(handler, m_read_handler_storage);
+    }
+
+    template <class Handler>
+    allocating_handler<Handler, LIBED2K_WRITE_HANDLER_MAX_SIZE> make_write_handler(Handler const& handler) {
+        return allocating_handler<Handler, LIBED2K_WRITE_HANDLER_MAX_SIZE>(handler, m_write_handler_storage);
+    }
+};
 }
 
 #endif

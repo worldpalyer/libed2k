@@ -33,29 +33,27 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef LIBED2K_STRING_UTIL_HPP_INCLUDED
 #define LIBED2K_STRING_UTIL_HPP_INCLUDED
 
-namespace libed2k
-{
-    bool is_alpha(char c);
-    bool is_digit(char c);
-    bool is_print(char c);
-    bool is_space(char c);
-    char to_lower(char c);
+namespace libed2k {
+bool is_alpha(char c);
+bool is_digit(char c);
+bool is_print(char c);
+bool is_space(char c);
+char to_lower(char c);
 
-    int split_string(char const** tags, int buf_size, char* in);
-    bool string_begins_no_case(char const* s1, char const* s2);
-    bool string_equal_no_case(char const* s1, char const* s2);
+int split_string(char const** tags, int buf_size, char* in);
+bool string_begins_no_case(char const* s1, char const* s2);
+bool string_equal_no_case(char const* s1, char const* s2);
 
-    void url_random(char* begin, char* end);
+void url_random(char* begin, char* end);
 
-    // strdup is not part of the C standard. Some systems
-    // don't have it and it won't be available when building
-    // in strict ansi mode
-    char* allocate_string_copy(char const* str);
+// strdup is not part of the C standard. Some systems
+// don't have it and it won't be available when building
+// in strict ansi mode
+char* allocate_string_copy(char const* str);
 
-    // returns p + x such that the pointer is 8 bytes aligned
-    // x cannot be greater than 7
-    void* align_pointer(void* p);
-
+// returns p + x such that the pointer is 8 bytes aligned
+// x cannot be greater than 7
+void* align_pointer(void* p);
 }
 
 #endif

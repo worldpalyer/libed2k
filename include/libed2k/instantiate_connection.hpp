@@ -36,18 +36,15 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/socket_type.hpp"
 #include <boost/shared_ptr.hpp>
 
-namespace libed2k
-{
-    struct proxy_settings;
-    struct utp_socket_manager;
-    struct socket_type;
+namespace libed2k {
+struct proxy_settings;
+struct utp_socket_manager;
+struct socket_type;
 
-    // instantiate a socket_type (s) according to the specified criteria
-    LIBED2K_EXTRA_EXPORT bool instantiate_connection(io_service& ios
-        , proxy_settings const& ps, socket_type& s
-        , void* ssl_context = 0
-        , utp_socket_manager* sm = 0
-        , bool peer_connection = false);
+// instantiate a socket_type (s) according to the specified criteria
+LIBED2K_EXTRA_EXPORT bool instantiate_connection(io_service& ios, proxy_settings const& ps, socket_type& s,
+                                                 void* ssl_context = 0, utp_socket_manager* sm = 0,
+                                                 bool peer_connection = false);
 }
 
 #endif

@@ -43,11 +43,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma warning(pop)
 #endif
 
-namespace libed2k
-{
-	typedef boost::int64_t size_type;
-	typedef boost::uint64_t unsigned_size_type;
+namespace libed2k {
+typedef boost::int64_t size_type;
+typedef boost::uint64_t unsigned_size_type;
 }
-
 
 #endif

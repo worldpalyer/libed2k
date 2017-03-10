@@ -35,20 +35,16 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <libed2k/config.hpp>
 
-namespace libed2k
-{
-    struct LIBED2K_EXTRA_EXPORT peer_request
-    {
-        int piece;
-        int start;
-        int length;
+namespace libed2k {
+struct LIBED2K_EXTRA_EXPORT peer_request {
+    int piece;
+    int start;
+    int length;
 
-        peer_request(): piece(-1), start(-1), length(-1) {}
-        peer_request(int p, int s, int l): piece(p), start(s), length(l) {}
-        bool operator==(peer_request const& r) const
-        { return piece == r.piece && start == r.start && length == r.length; }
-    };
+    peer_request() : piece(-1), start(-1), length(-1) {}
+    peer_request(int p, int s, int l) : piece(p), start(s), length(l) {}
+    bool operator==(peer_request const& r) const { return piece == r.piece && start == r.start && length == r.length; }
+};
 }
 
-#endif // LIBED2K_PEER_REQUEST_HPP_INCLUDED
-
+#endif  // LIBED2K_PEER_REQUEST_HPP_INCLUDED

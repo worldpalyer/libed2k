@@ -34,10 +34,13 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <libed2k/config.hpp>
 
-#if (!defined LIBED2K_DEBUG && !LIBED2K_RELEASE_ASSERTS) \
-    || LIBED2K_NO_ASSERTS
-#define LIBED2K_ASSERT(a) do {} while(false)
-#define LIBED2K_ASSERT_VAL(a, b) do {} while(false)
+#if (!defined LIBED2K_DEBUG && !LIBED2K_RELEASE_ASSERTS) || LIBED2K_NO_ASSERTS
+#define LIBED2K_ASSERT(a) \
+    do {                  \
+    } while (false)
+#define LIBED2K_ASSERT_VAL(a, b) \
+    do {                         \
+    } while (false)
 #else
 
 #if LIBED2K_PRODUCTION_ASSERTS
@@ -46,9 +49,9 @@ extern char const* libed2k_assert_log;
 
 #include <string>
 
-namespace libed2k{
-    std::string demangle(char const* name);
-    LIBED2K_EXPORT void print_backtrace(char* out, int len, int max_depth = 0);
+namespace libed2k {
+std::string demangle(char const* name);
+LIBED2K_EXPORT void print_backtrace(char* out, int len, int max_depth = 0);
 }
 
 #if (defined __linux__ || defined __MACH__) && defined __GNUC__ && !LIBED2K_USE_SYSTEM_ASSERT
@@ -57,14 +60,26 @@ namespace libed2k{
 #include <sstream>
 #endif
 
-namespace libed2k{
-    LIBED2K_EXPORT void assert_fail(const char* expr, int line, char const* file
-            , char const* function, char const* val);
+namespace libed2k {
+LIBED2K_EXPORT void assert_fail(const char* expr, int line, char const* file, char const* function, char const* val);
 }
 
-#define LIBED2K_ASSERT(x) do { if (x) {} else libed2k::assert_fail(#x, __LINE__, __FILE__, __PRETTY_FUNCTION__, 0); } while (false)
+#define LIBED2K_ASSERT(x)                                                         \
+    do {                                                                          \
+        if (x) {                                                                  \
+        } else                                                                    \
+            libed2k::assert_fail(#x, __LINE__, __FILE__, __PRETTY_FUNCTION__, 0); \
+    } while (false)
 #if LIBED2K_USE_IOSTREAM
-#define LIBED2K_ASSERT_VAL(x, y) do { if (x) {} else { std::stringstream __s__; __s__ << #y ": " << y; libed2k::assert_fail(#x, __LINE__, __FILE__, __PRETTY_FUNCTION__, __s__.str().c_str()); } } while (false)
+#define LIBED2K_ASSERT_VAL(x, y)                                                                    \
+    do {                                                                                            \
+        if (x) {                                                                                    \
+        } else {                                                                                    \
+            std::stringstream __s__;                                                                \
+            __s__ << #y ": " << y;                                                                  \
+            libed2k::assert_fail(#x, __LINE__, __FILE__, __PRETTY_FUNCTION__, __s__.str().c_str()); \
+        }                                                                                           \
+    } while (false)
 #else
 #define LIBED2K_ASSERT_VAL(x, y) LIBED2K_ASSERT(x)
 #endif

@@ -37,100 +37,70 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <kernel/OS.h>
 #endif
 
-namespace libed2k
-{
-	void sleep(int milliseconds)
-	{
+namespace libed2k {
+void sleep(int milliseconds) {
 #if defined LIBED2K_WINDOWS || defined LIBED2K_CYGWIN
-		Sleep(milliseconds);
+    Sleep(milliseconds);
 #elif defined LIBED2K_BEOS
-		snooze_until(system_time() + boost::int64_t(milliseconds) * 1000, B_SYSTEM_TIMEBASE);
+    snooze_until(system_time() + boost::int64_t(milliseconds) * 1000, B_SYSTEM_TIMEBASE);
 #else
-		usleep(milliseconds * 1000);
+    usleep(milliseconds * 1000);
 #endif
-	}
+}
 
 #ifdef BOOST_HAS_PTHREADS
 
-	condition::condition()
-	{
-		pthread_cond_init(&m_cond, 0);
-	}
+condition::condition() { pthread_cond_init(&m_cond, 0); }
 
-	condition::~condition()
-	{
-		pthread_cond_destroy(&m_cond);
-	}
+condition::~condition() { pthread_cond_destroy(&m_cond); }
 
-	void condition::wait(mutex::scoped_lock& l)
-	{
-		LIBED2K_ASSERT(l.locked());
-		// wow, this is quite a hack
-		pthread_cond_wait(&m_cond, (::pthread_mutex_t*)&l.mutex());
-	}
+void condition::wait(mutex::scoped_lock& l) {
+    LIBED2K_ASSERT(l.locked());
+    // wow, this is quite a hack
+    pthread_cond_wait(&m_cond, (::pthread_mutex_t*)&l.mutex());
+}
 
-	void condition::signal_all(mutex::scoped_lock& l)
-	{
-		LIBED2K_ASSERT(l.locked());
-		pthread_cond_broadcast(&m_cond);
-	}
+void condition::signal_all(mutex::scoped_lock& l) {
+    LIBED2K_ASSERT(l.locked());
+    pthread_cond_broadcast(&m_cond);
+}
 #elif defined LIBED2K_WINDOWS || defined LIBED2K_CYGWIN
-	condition::condition()
-		: m_num_waiters(0)
-	{
-		m_sem = CreateSemaphore(0, 0, INT_MAX, 0);
-	}
+condition::condition() : m_num_waiters(0) { m_sem = CreateSemaphore(0, 0, INT_MAX, 0); }
 
-	condition::~condition()
-	{
-		CloseHandle(m_sem);
-	}
+condition::~condition() { CloseHandle(m_sem); }
 
-	void condition::wait(mutex::scoped_lock& l)
-	{
-		LIBED2K_ASSERT(l.locked());
-		++m_num_waiters;
-		l.unlock();
-		WaitForSingleObject(m_sem, INFINITE);
-		l.lock();
-		--m_num_waiters;
-	}
+void condition::wait(mutex::scoped_lock& l) {
+    LIBED2K_ASSERT(l.locked());
+    ++m_num_waiters;
+    l.unlock();
+    WaitForSingleObject(m_sem, INFINITE);
+    l.lock();
+    --m_num_waiters;
+}
 
-	void condition::signal_all(mutex::scoped_lock& l)
-	{
-		LIBED2K_ASSERT(l.locked());
-		ReleaseSemaphore(m_sem, m_num_waiters, 0);
-	}
+void condition::signal_all(mutex::scoped_lock& l) {
+    LIBED2K_ASSERT(l.locked());
+    ReleaseSemaphore(m_sem, m_num_waiters, 0);
+}
 #elif defined LIBED2K_BEOS
-	condition::condition()
-		: m_num_waiters(0)
-	{
-		m_sem = create_sem(0, 0);
-	}
+condition::condition() : m_num_waiters(0) { m_sem = create_sem(0, 0); }
 
-	condition::~condition()
-	{
-		delete_sem(m_sem);
-	}
+condition::~condition() { delete_sem(m_sem); }
 
-	void condition::wait(mutex::scoped_lock& l)
-	{
-		LIBED2K_ASSERT(l.locked());
-		++m_num_waiters;
-		l.unlock();
-		acquire_sem(m_sem);
-		l.lock();
-		--m_num_waiters;
-	}
+void condition::wait(mutex::scoped_lock& l) {
+    LIBED2K_ASSERT(l.locked());
+    ++m_num_waiters;
+    l.unlock();
+    acquire_sem(m_sem);
+    l.lock();
+    --m_num_waiters;
+}
 
-	void condition::signal_all(mutex::scoped_lock& l)
-	{
-		LIBED2K_ASSERT(l.locked());
-		release_sem_etc(m_sem, m_num_waiters, 0);
-	}
+void condition::signal_all(mutex::scoped_lock& l) {
+    LIBED2K_ASSERT(l.locked());
+    release_sem_etc(m_sem, m_num_waiters, 0);
+}
 #else
 #error not implemented
 #endif
-
 }
-

@@ -41,8 +41,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/address.hpp"
 #include "libed2k/kademlia/kad_packet_struct.hpp"
 
-namespace libed2k { namespace dht
-{
+namespace libed2k {
+namespace dht {
 
 typedef libed2k::kad_id node_id;
 
@@ -62,8 +62,7 @@ node_id LIBED2K_EXTRA_EXPORT generate_random_id();
 node_id LIBED2K_EXTRA_EXPORT generate_id_impl(address const& ip_, boost::uint32_t r);
 
 bool LIBED2K_EXTRA_EXPORT verify_id(node_id const& nid, address const& source_ip);
+}
+}  // namespace libed2k::dht
 
-} } // namespace libed2k::dht
-
-#endif // NODE_ID_HPP
-
+#endif  // NODE_ID_HPP

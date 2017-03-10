@@ -35,114 +35,92 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #if defined LIBED2K_USE_OPENSSL
 
-extern "C"
-{
+extern "C" {
 #include <openssl/rsa.h>
-#include <openssl/objects.h> // for NID_sha1
+#include <openssl/objects.h>  // for NID_sha1
 }
 
-namespace libed2k
-{
+namespace libed2k {
 
 // returns the size of the resulting signature
-int sign_rsa(sha1_hash const& digest
-	, char const* private_key, int private_len
-	, char* signature, int sig_len)
-{
-	// convert bytestring to internal representation
-	// of the private key
-	RSA* priv = 0;
-	unsigned char const* key = (unsigned char const*)private_key;
-	priv = d2i_RSAPrivateKey(&priv, &key, private_len);
-	if (priv == 0) return -1;
+int sign_rsa(sha1_hash const& digest, char const* private_key, int private_len, char* signature, int sig_len) {
+    // convert bytestring to internal representation
+    // of the private key
+    RSA* priv = 0;
+    unsigned char const* key = (unsigned char const*)private_key;
+    priv = d2i_RSAPrivateKey(&priv, &key, private_len);
+    if (priv == 0) return -1;
 
-	if (RSA_size(priv) > sig_len)
-	{
-		RSA_free(priv);
-		return -1;
-	}
+    if (RSA_size(priv) > sig_len) {
+        RSA_free(priv);
+        return -1;
+    }
 
-	RSA_sign(NID_sha1, &digest[0], 20, (unsigned char*)signature, (unsigned int*)&sig_len, priv);
+    RSA_sign(NID_sha1, &digest[0], 20, (unsigned char*)signature, (unsigned int*)&sig_len, priv);
 
-	RSA_free(priv);
+    RSA_free(priv);
 
-	return sig_len;
+    return sig_len;
 }
 
 // returns true if the signature is valid
-bool verify_rsa(sha1_hash const& digest
-	, char const* public_key, int public_len
-	, char const* signature, int sig_len)
-{
-	// convert bytestring to internal representation
-	// of the public key
-	RSA* pub = 0;
-	unsigned char const* key = (unsigned char const*)public_key;
-	pub = d2i_RSAPublicKey(&pub, &key, public_len);
-	if (pub == 0) return false;
+bool verify_rsa(sha1_hash const& digest, char const* public_key, int public_len, char const* signature, int sig_len) {
+    // convert bytestring to internal representation
+    // of the public key
+    RSA* pub = 0;
+    unsigned char const* key = (unsigned char const*)public_key;
+    pub = d2i_RSAPublicKey(&pub, &key, public_len);
+    if (pub == 0) return false;
 
-	int ret = RSA_verify(NID_sha1, &digest[0], 20, (unsigned char*)signature, sig_len, pub);
+    int ret = RSA_verify(NID_sha1, &digest[0], 20, (unsigned char*)signature, sig_len, pub);
 
-	RSA_free(pub);
+    RSA_free(pub);
 
-	return ret;
+    return ret;
 }
 
-bool generate_rsa_keys(char* public_key, int* public_len
-	, char* private_key, int* private_len, int key_size)
-{
-	RSA* keypair = RSA_generate_key(key_size, 3, 0, 0);
-	if (keypair == 0) return false;
+bool generate_rsa_keys(char* public_key, int* public_len, char* private_key, int* private_len, int key_size) {
+    RSA* keypair = RSA_generate_key(key_size, 3, 0, 0);
+    if (keypair == 0) return false;
 
-	bool ret = false;
-	unsigned char* pub = (unsigned char*)public_key;
-	unsigned char* priv = (unsigned char*)private_key;
+    bool ret = false;
+    unsigned char* pub = (unsigned char*)public_key;
+    unsigned char* priv = (unsigned char*)private_key;
 
-	if (RSA_size(keypair) > *public_len) goto getout;
-	if (RSA_size(keypair) > *private_len) goto getout;
+    if (RSA_size(keypair) > *public_len) goto getout;
+    if (RSA_size(keypair) > *private_len) goto getout;
 
-	*public_len = i2d_RSAPublicKey(keypair, &pub);
-	*private_len = i2d_RSAPrivateKey(keypair, &priv);
+    *public_len = i2d_RSAPublicKey(keypair, &pub);
+    *private_len = i2d_RSAPrivateKey(keypair, &priv);
 
-	ret = true;
+    ret = true;
 
 getout:
-	RSA_free(keypair);
-	return ret;
+    RSA_free(keypair);
+    return ret;
 }
 
-} // namespace libed2k
+}  // namespace libed2k
 
 #else
 
 // just stub these out for now, since they're not used anywhere yet
-namespace libed2k
-{
+namespace libed2k {
 
 // returns the size of the resulting signature
-int sign_rsa(sha1_hash const& digest
-	, char const* private_key, int private_len
-	, char* signature, int sig_len)
-{
-	return 0;
+int sign_rsa(sha1_hash const& digest, char const* private_key, int private_len, char* signature, int sig_len) {
+    return 0;
 }
 
 // returns true if the signature is valid
-bool verify_rsa(sha1_hash const& digest
-	, char const* public_key, int public_len
-	, char const* signature, int sig_len)
-{
-	return false;
+bool verify_rsa(sha1_hash const& digest, char const* public_key, int public_len, char const* signature, int sig_len) {
+    return false;
 }
 
-bool generate_rsa_keys(char* public_key, int* public_len
-	, char* private_key, int* private_len, int key_size)
-{
-	return false;
+bool generate_rsa_keys(char* public_key, int* public_len, char* private_key, int* private_len, int key_size) {
+    return false;
 }
 
-} // namespace libed2k
+}  // namespace libed2k
 
 #endif
-
-

@@ -42,7 +42,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/assert.hpp"
 
 #if LIBED2K_USE_IOSTREAM
-#include "libed2k/escape_string.hpp" // to_hex, from_hex
+#include "libed2k/escape_string.hpp"  // to_hex, from_hex
 #include <iostream>
 #include <iomanip>
 #endif
@@ -55,223 +55,187 @@ POSSIBILITY OF SUCH DAMAGE.
 #undef min
 #endif
 
-namespace libed2k
-{
+namespace libed2k {
 
-	class LIBED2K_EXPORT big_number
-	{
-		// the number of bytes of the number
-		enum { number_size = 20 };
-	public:
-		enum { size = number_size };
+class LIBED2K_EXPORT big_number {
+    // the number of bytes of the number
+    enum { number_size = 20 };
 
-		big_number() { clear(); }
+   public:
+    enum { size = number_size };
 
-		static big_number max()
-		{
-			big_number ret;
-			memset(ret.m_number, 0xff, size);
-			return ret;
-		}
+    big_number() { clear(); }
 
-		static big_number min()
-		{
-			big_number ret;
-			memset(ret.m_number, 0, size);
-			return ret;
-		}
+    static big_number max() {
+        big_number ret;
+        memset(ret.m_number, 0xff, size);
+        return ret;
+    }
 
-		explicit big_number(char const* s)
-		{
-			if (s == 0) clear();
-			else std::memcpy(m_number, s, size);
-		}
+    static big_number min() {
+        big_number ret;
+        memset(ret.m_number, 0, size);
+        return ret;
+    }
 
-		explicit big_number(std::string const& s)
-		{
-			LIBED2K_ASSERT(s.size() >= 20);
-			int sl = int(s.size()) < size ? int(s.size()) : size;
-			std::memcpy(m_number, s.c_str(), sl);
-		}
+    explicit big_number(char const* s) {
+        if (s == 0)
+            clear();
+        else
+            std::memcpy(m_number, s, size);
+    }
 
-		void assign(std::string const& s)
-		{
-			LIBED2K_ASSERT(s.size() >= 20);
-			int sl = int(s.size()) < size ? int(s.size()) : size;
-			std::memcpy(m_number, s.c_str(), sl);
-		}
+    explicit big_number(std::string const& s) {
+        LIBED2K_ASSERT(s.size() >= 20);
+        int sl = int(s.size()) < size ? int(s.size()) : size;
+        std::memcpy(m_number, s.c_str(), sl);
+    }
 
-		void assign(char const* str) { std::memcpy(m_number, str, size); }
-		void clear() { std::memset(m_number, 0, number_size); }
+    void assign(std::string const& s) {
+        LIBED2K_ASSERT(s.size() >= 20);
+        int sl = int(s.size()) < size ? int(s.size()) : size;
+        std::memcpy(m_number, s.c_str(), sl);
+    }
 
-		bool is_all_zeros() const
-		{
-			for (const unsigned char* i = m_number; i < m_number+number_size; ++i)
-				if (*i != 0) return false;
-			return true;
-		}
+    void assign(char const* str) { std::memcpy(m_number, str, size); }
+    void clear() { std::memset(m_number, 0, number_size); }
 
-		big_number& operator<<=(int n)
-		{
-			LIBED2K_ASSERT(n >= 0);
-			int num_bytes = n / 8;
-			if (num_bytes >= number_size)
-			{
-				std::memset(m_number, 0, number_size);
-				return *this;
-			}
+    bool is_all_zeros() const {
+        for (const unsigned char* i = m_number; i < m_number + number_size; ++i)
+            if (*i != 0) return false;
+        return true;
+    }
 
-			if (num_bytes > 0)
-			{
-				std::memmove(m_number, m_number + num_bytes, number_size - num_bytes);
-				std::memset(m_number + number_size - num_bytes, 0, num_bytes);
-				n -= num_bytes * 8;
-			}
-			if (n > 0)
-			{
-				for (int i = 0; i < number_size - 1; ++i)
-				{
-					m_number[i] <<= n;
-					m_number[i] |= m_number[i+1] >> (8 - n);
-				}
-			}
-			return *this;
-		}
+    big_number& operator<<=(int n) {
+        LIBED2K_ASSERT(n >= 0);
+        int num_bytes = n / 8;
+        if (num_bytes >= number_size) {
+            std::memset(m_number, 0, number_size);
+            return *this;
+        }
 
-		big_number& operator>>=(int n)
-		{
-			LIBED2K_ASSERT(n >= 0);
-			int num_bytes = n / 8;
-			if (num_bytes >= number_size)
-			{
-				std::memset(m_number, 0, number_size);
-				return *this;
-			}
-			if (num_bytes > 0)
-			{
-				std::memmove(m_number + num_bytes, m_number, number_size - num_bytes);
-				std::memset(m_number, 0, num_bytes);
-				n -= num_bytes * 8;
-			}
-			if (n > 0)
-			{
-				for (int i = number_size - 1; i > 0; --i)
-				{
-					m_number[i] >>= n;
-					m_number[i] |= m_number[i-1] << (8 - n);
-				}
-			}
-			return *this;
-		}
+        if (num_bytes > 0) {
+            std::memmove(m_number, m_number + num_bytes, number_size - num_bytes);
+            std::memset(m_number + number_size - num_bytes, 0, num_bytes);
+            n -= num_bytes * 8;
+        }
+        if (n > 0) {
+            for (int i = 0; i < number_size - 1; ++i) {
+                m_number[i] <<= n;
+                m_number[i] |= m_number[i + 1] >> (8 - n);
+            }
+        }
+        return *this;
+    }
 
-		bool operator==(big_number const& n) const
-		{
-			return std::equal(n.m_number, n.m_number+number_size, m_number);
-		}
+    big_number& operator>>=(int n) {
+        LIBED2K_ASSERT(n >= 0);
+        int num_bytes = n / 8;
+        if (num_bytes >= number_size) {
+            std::memset(m_number, 0, number_size);
+            return *this;
+        }
+        if (num_bytes > 0) {
+            std::memmove(m_number + num_bytes, m_number, number_size - num_bytes);
+            std::memset(m_number, 0, num_bytes);
+            n -= num_bytes * 8;
+        }
+        if (n > 0) {
+            for (int i = number_size - 1; i > 0; --i) {
+                m_number[i] >>= n;
+                m_number[i] |= m_number[i - 1] << (8 - n);
+            }
+        }
+        return *this;
+    }
 
-		bool operator!=(big_number const& n) const
-		{
-			return !std::equal(n.m_number, n.m_number+number_size, m_number);
-		}
+    bool operator==(big_number const& n) const { return std::equal(n.m_number, n.m_number + number_size, m_number); }
 
-		bool operator<(big_number const& n) const
-		{
-			for (int i = 0; i < number_size; ++i)
-			{
-				if (m_number[i] < n.m_number[i]) return true;
-				if (m_number[i] > n.m_number[i]) return false;
-			}
-			return false;
-		}
-		
-		big_number operator~()
-		{
-			big_number ret;
-			for (int i = 0; i< number_size; ++i)
-				ret.m_number[i] = ~m_number[i];
-			return ret;
-		}
-		
-		big_number operator^ (big_number const& n) const
-		{
-			big_number ret = *this;
-			ret ^= n;
-			return ret;
-		}
+    bool operator!=(big_number const& n) const { return !std::equal(n.m_number, n.m_number + number_size, m_number); }
 
-		big_number operator& (big_number const& n) const
-		{
-			big_number ret = *this;
-			ret &= n;
-			return ret;
-		}
+    bool operator<(big_number const& n) const {
+        for (int i = 0; i < number_size; ++i) {
+            if (m_number[i] < n.m_number[i]) return true;
+            if (m_number[i] > n.m_number[i]) return false;
+        }
+        return false;
+    }
 
-		big_number& operator &= (big_number const& n)
-		{
-			for (int i = 0; i< number_size; ++i)
-				m_number[i] &= n.m_number[i];
-			return *this;
-		}
+    big_number operator~() {
+        big_number ret;
+        for (int i = 0; i < number_size; ++i) ret.m_number[i] = ~m_number[i];
+        return ret;
+    }
 
-		big_number& operator |= (big_number const& n)
-		{
-			for (int i = 0; i< number_size; ++i)
-				m_number[i] |= n.m_number[i];
-			return *this;
-		}
+    big_number operator^(big_number const& n) const {
+        big_number ret = *this;
+        ret ^= n;
+        return ret;
+    }
 
-		big_number& operator ^= (big_number const& n)
-		{
-			for (int i = 0; i< number_size; ++i)
-				m_number[i] ^= n.m_number[i];
-			return *this;
-		}
-		
-		unsigned char& operator[](int i)
-		{ LIBED2K_ASSERT(i >= 0 && i < number_size); return m_number[i]; }
+    big_number operator&(big_number const& n) const {
+        big_number ret = *this;
+        ret &= n;
+        return ret;
+    }
 
-		unsigned char const& operator[](int i) const
-		{ LIBED2K_ASSERT(i >= 0 && i < number_size); return m_number[i]; }
+    big_number& operator&=(big_number const& n) {
+        for (int i = 0; i < number_size; ++i) m_number[i] &= n.m_number[i];
+        return *this;
+    }
 
-		typedef const unsigned char* const_iterator;
-		typedef unsigned char* iterator;
+    big_number& operator|=(big_number const& n) {
+        for (int i = 0; i < number_size; ++i) m_number[i] |= n.m_number[i];
+        return *this;
+    }
 
-		const_iterator begin() const { return m_number; }
-		const_iterator end() const { return m_number+number_size; }
+    big_number& operator^=(big_number const& n) {
+        for (int i = 0; i < number_size; ++i) m_number[i] ^= n.m_number[i];
+        return *this;
+    }
 
-		iterator begin() { return m_number; }
-		iterator end() { return m_number+number_size; }
+    unsigned char& operator[](int i) {
+        LIBED2K_ASSERT(i >= 0 && i < number_size);
+        return m_number[i];
+    }
 
-		std::string to_string() const
-		{ return std::string((char const*)&m_number[0], number_size); }
+    unsigned char const& operator[](int i) const {
+        LIBED2K_ASSERT(i >= 0 && i < number_size);
+        return m_number[i];
+    }
 
-	private:
+    typedef const unsigned char* const_iterator;
+    typedef unsigned char* iterator;
 
-		unsigned char m_number[number_size];
+    const_iterator begin() const { return m_number; }
+    const_iterator end() const { return m_number + number_size; }
 
-	};
+    iterator begin() { return m_number; }
+    iterator end() { return m_number + number_size; }
 
-	typedef big_number peer_id;
-	typedef big_number sha1_hash;
+    std::string to_string() const { return std::string((char const*)&m_number[0], number_size); }
+
+   private:
+    unsigned char m_number[number_size];
+};
+
+typedef big_number peer_id;
+typedef big_number sha1_hash;
 
 #if LIBED2K_USE_IOSTREAM
-	inline std::ostream& operator<<(std::ostream& os, big_number const& peer)
-	{
-		char out[41];
-		to_hex((char const*)&peer[0], big_number::size, out);
-		return os << out;
-	}
-
-	inline std::istream& operator>>(std::istream& is, big_number& peer)
-	{
-		char hex[40];
-		is.read(hex, 40);
-		if (!from_hex(hex, 40, (char*)&peer[0]))
-			is.setstate(std::ios_base::failbit);
-		return is;
-	}
-#endif // LIBED2K_USE_IOSTREAM
+inline std::ostream& operator<<(std::ostream& os, big_number const& peer) {
+    char out[41];
+    to_hex((char const*)&peer[0], big_number::size, out);
+    return os << out;
 }
 
-#endif // LIBED2K_PEER_ID_HPP_INCLUDED
+inline std::istream& operator>>(std::istream& is, big_number& peer) {
+    char hex[40];
+    is.read(hex, 40);
+    if (!from_hex(hex, 40, (char*)&peer[0])) is.setstate(std::ios_base::failbit);
+    return is;
+}
+#endif  // LIBED2K_USE_IOSTREAM
+}
 
+#endif  // LIBED2K_PEER_ID_HPP_INCLUDED

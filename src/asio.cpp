@@ -1,7 +1,7 @@
 // builds all boost.asio source as a separate compilation unit
 #include <boost/version.hpp>
 
-#if defined( BOOST_ASIO_SEPARATE_COMPILATION) || defined(BOOST_ASIO_DYN_LINK)
+#if defined(BOOST_ASIO_SEPARATE_COMPILATION) || defined(BOOST_ASIO_DYN_LINK)
 
 #ifndef BOOST_ASIO_SOURCE
 #define BOOST_ASIO_SOURCE
@@ -9,7 +9,7 @@
 
 #include "libed2k/config.hpp"
 
-#define TORRENT_HAS_ASIO_DECL x ## BOOST_ASIO_DECL
+#define TORRENT_HAS_ASIO_DECL x##BOOST_ASIO_DECL
 
 // only define BOOST_ASIO_DECL if it hasn't already been defined
 // or if it has been defined to an empty string

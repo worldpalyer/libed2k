@@ -19,363 +19,309 @@
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/alert_types.hpp"
 
-namespace libed2k
-{
+namespace libed2k {
 
-    ///////////////////////////////////////////////////////////////////////////////
-    // ED2K File Type
-    //
-    enum EED2KFileType
-    {
-        ED2KFT_ANY              = 0,
-        ED2KFT_AUDIO            = 1,    // ED2K protocol value (eserver 17.6+)
-        ED2KFT_VIDEO            = 2,    // ED2K protocol value (eserver 17.6+)
-        ED2KFT_IMAGE            = 3,    // ED2K protocol value (eserver 17.6+)
-        ED2KFT_PROGRAM          = 4,    // ED2K protocol value (eserver 17.6+)
-        ED2KFT_DOCUMENT         = 5,    // ED2K protocol value (eserver 17.6+)
-        ED2KFT_ARCHIVE          = 6,    // ED2K protocol value (eserver 17.6+)
-        ED2KFT_CDIMAGE          = 7,    // ED2K protocol value (eserver 17.6+)
-        ED2KFT_EMULECOLLECTION  = 8
-    };
+///////////////////////////////////////////////////////////////////////////////
+// ED2K File Type
+//
+enum EED2KFileType {
+    ED2KFT_ANY = 0,
+    ED2KFT_AUDIO = 1,     // ED2K protocol value (eserver 17.6+)
+    ED2KFT_VIDEO = 2,     // ED2K protocol value (eserver 17.6+)
+    ED2KFT_IMAGE = 3,     // ED2K protocol value (eserver 17.6+)
+    ED2KFT_PROGRAM = 4,   // ED2K protocol value (eserver 17.6+)
+    ED2KFT_DOCUMENT = 5,  // ED2K protocol value (eserver 17.6+)
+    ED2KFT_ARCHIVE = 6,   // ED2K protocol value (eserver 17.6+)
+    ED2KFT_CDIMAGE = 7,   // ED2K protocol value (eserver 17.6+)
+    ED2KFT_EMULECOLLECTION = 8
+};
 
-    // Media values for FT_FILETYPE
-    const std::string ED2KFTSTR_AUDIO("Audio");
-    const std::string ED2KFTSTR_VIDEO("Video");
-    const std::string ED2KFTSTR_IMAGE("Image");
-    const std::string ED2KFTSTR_DOCUMENT("Doc");
-    const std::string ED2KFTSTR_PROGRAM("Pro");
-    const std::string ED2KFTSTR_ARCHIVE("Arc");  // *Mule internal use only
-    const std::string ED2KFTSTR_CDIMAGE("Iso");  // *Mule internal use only
-    const std::string ED2KFTSTR_EMULECOLLECTION("EmuleCollection");
-    const std::string ED2KFTSTR_FOLDER("Folder"); // Value for eD2K tag FT_FILETYPE
-    const std::string ED2KFTSTR_USER("User"); // eMule internal use only
+// Media values for FT_FILETYPE
+const std::string ED2KFTSTR_AUDIO("Audio");
+const std::string ED2KFTSTR_VIDEO("Video");
+const std::string ED2KFTSTR_IMAGE("Image");
+const std::string ED2KFTSTR_DOCUMENT("Doc");
+const std::string ED2KFTSTR_PROGRAM("Pro");
+const std::string ED2KFTSTR_ARCHIVE("Arc");  // *Mule internal use only
+const std::string ED2KFTSTR_CDIMAGE("Iso");  // *Mule internal use only
+const std::string ED2KFTSTR_EMULECOLLECTION("EmuleCollection");
+const std::string ED2KFTSTR_FOLDER("Folder");  // Value for eD2K tag FT_FILETYPE
+const std::string ED2KFTSTR_USER("User");      // eMule internal use only
 
-    // Additional media meta data tags from eDonkeyHybrid (note also the uppercase/lowercase)
-    const std::string FT_ED2K_MEDIA_ARTIST("Artist");    // <string>
-    const std::string FT_ED2K_MEDIA_ALBUM(     "Album");     // <string>
-    const std::string FT_ED2K_MEDIA_TITLE(     "Title");     // <string>
-    const std::string FT_ED2K_MEDIA_LENGTH(    "length");    // <string> !!!
-    const std::string FT_ED2K_MEDIA_BITRATE(   "bitrate");   // <uint32>
-    const std::string FT_ED2K_MEDIA_CODEC(     "codec");    // <string>
-    // ?
-    #define TAG_NSENT               "# Sent"
-    #define TAG_ONIP                "ip"
-    #define TAG_ONPORT              "port"
+// Additional media meta data tags from eDonkeyHybrid (note also the uppercase/lowercase)
+const std::string FT_ED2K_MEDIA_ARTIST("Artist");    // <string>
+const std::string FT_ED2K_MEDIA_ALBUM("Album");      // <string>
+const std::string FT_ED2K_MEDIA_TITLE("Title");      // <string>
+const std::string FT_ED2K_MEDIA_LENGTH("length");    // <string> !!!
+const std::string FT_ED2K_MEDIA_BITRATE("bitrate");  // <uint32>
+const std::string FT_ED2K_MEDIA_CODEC("codec");      // <string>
+// ?
+#define TAG_NSENT "# Sent"
+#define TAG_ONIP "ip"
+#define TAG_ONPORT "port"
 
+const boost::uint8_t PR_VERYLOW = 4;
+const boost::uint8_t PR_LOW = 0;
+const boost::uint8_t PR_NORMAL = 1;
+const boost::uint8_t PR_HIGH = 2;
+const boost::uint8_t PR_VERYHIGH = 3;
+const boost::uint8_t PR_AUTO = 5;
+const boost::uint8_t PR_POWERSHARE = 6;
 
+/**
+  * this function work correctly only with lower case file extensions!
+ */
+extern EED2KFileType GetED2KFileTypeID(const std::string& strFileName);
+extern std::string GetED2KFileTypeSearchTerm(EED2KFileType iFileID);
+extern EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID);
+extern std::string GetFileTypeByName(const std::string& strFileName);
 
-    const boost::uint8_t PR_VERYLOW     = 4;
-    const boost::uint8_t PR_LOW         = 0;
-    const boost::uint8_t PR_NORMAL      = 1;
-    const boost::uint8_t PR_HIGH        = 2;
-    const boost::uint8_t PR_VERYHIGH    = 3;
-    const boost::uint8_t PR_AUTO        = 5;
-    const boost::uint8_t PR_POWERSHARE  = 6;
+const unsigned int PIECE_COUNT_ALLOC = 20;
 
-    /**
-      * this function work correctly only with lower case file extensions!
-     */
-    extern EED2KFileType GetED2KFileTypeID(const std::string& strFileName);
-    extern std::string GetED2KFileTypeSearchTerm(EED2KFileType iFileID);
-    extern EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID);
-    extern std::string GetFileTypeByName(const std::string& strFileName);
+// for future usage
+enum PreferencesDatFileVersions {
+    PREFFILE_VERSION = 0x14  //<<-- last change: reduced .dat, by using .ini
+};
 
-    const unsigned int PIECE_COUNT_ALLOC = 20;
+enum PartMetFileVersions {
+    PARTFILE_VERSION = 0xe0,
+    PARTFILE_SPLITTEDVERSION = 0xe1,  // For edonkey part files importing.
+    PARTFILE_VERSION_LARGEFILE = 0xe2
+};
 
-    // for future usage
-    enum PreferencesDatFileVersions {
-        PREFFILE_VERSION        = 0x14 //<<-- last change: reduced .dat, by using .ini
-    };
+enum CreditFileVersions { CREDITFILE_VERSION = 0x12 };
 
-    enum PartMetFileVersions {
-        PARTFILE_VERSION            = 0xe0,
-        PARTFILE_SPLITTEDVERSION    = 0xe1, // For edonkey part files importing.
-        PARTFILE_VERSION_LARGEFILE  = 0xe2
-    };
+enum CanceledFileListVersions { CANCELEDFILE_VERSION = 0x21 };
 
-    enum CreditFileVersions {
-        CREDITFILE_VERSION      = 0x12
-    };
+// known.met file header
+const boost::uint8_t MET_HEADER = 0x0E;
+const boost::uint8_t MET_HEADER_WITH_LARGEFILES = 0x0F;
 
-    enum CanceledFileListVersions {
-        CANCELEDFILE_VERSION    = 0x21
-    };
+// one byte header for met files
+struct met_file_header {
+    boost::uint8_t m_header;
+    met_file_header() : m_header(MET_HEADER_WITH_LARGEFILES) {}
 
-    // known.met file header
-    const boost::uint8_t  MET_HEADER                  = 0x0E;
-    const boost::uint8_t  MET_HEADER_WITH_LARGEFILES  = 0x0F;
+    template <typename Archive>
+    void serialize(Archive& ar) {
+        ar& m_header;
+        if (m_header != MET_HEADER && m_header != MET_HEADER_WITH_LARGEFILES)
+            throw libed2k_exception(errors::met_file_invalid_header_byte);
+    }
+};
 
-    // one byte header for met files
-    struct met_file_header
-    {
-        boost::uint8_t m_header;
-        met_file_header() : m_header(MET_HEADER_WITH_LARGEFILES){}
+typedef container_holder<boost::uint16_t, std::vector<md4_hash> > hash_list;
 
-        template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_header;
-            if (m_header != MET_HEADER && m_header != MET_HEADER_WITH_LARGEFILES)
-                throw libed2k_exception(errors::met_file_invalid_header_byte);
-        }
-    };
+/**
+  * simple known file entry structure
+ */
+struct known_file_entry {
+    boost::uint32_t m_nLastChanged;  //!< date last changed
+    md4_hash m_hFile;                //!< file hash
+    hash_list m_hash_list;
+    tag_list<boost::uint32_t> m_list;
 
-    typedef container_holder<boost::uint16_t, std::vector<md4_hash> > hash_list;
+    known_file_entry();
 
-    /**
-      * simple known file entry structure
-     */
-    struct known_file_entry
-    {
-        boost::uint32_t             m_nLastChanged; //!< date last changed
-        md4_hash                    m_hFile;        //!< file hash
-        hash_list                   m_hash_list;
-        tag_list<boost::uint32_t>   m_list;
+    known_file_entry(const md4_hash& hFile, const std::vector<md4_hash>& hSet, const std::string& filename,
+                     size_type nFilesize, boost::uint32_t nAccepted, boost::uint32_t nRequested,
+                     boost::uint64_t nTransferred, boost::uint8_t nPriority);
 
-        known_file_entry();
+    template <typename Archive>
+    void serialize(Archive& ar) {
+        ar& m_nLastChanged;
+        ar& m_hFile;
+        ar& m_hash_list;
+        ar& m_list;
+    }
 
-        known_file_entry(const md4_hash& hFile,
-                            const std::vector<md4_hash>& hSet,
-                            const std::string& filename,
-                            size_type  nFilesize,
-                            boost::uint32_t nAccepted,
-                            boost::uint32_t nRequested,
-                            boost::uint64_t nTransferred,
-                            boost::uint8_t  nPriority);
+    void dump() const;
+};
 
-        template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_nLastChanged;
-            ar & m_hFile;
-            ar & m_hash_list;
-            ar & m_list;
-        }
+typedef container_holder<boost::uint32_t, std::deque<known_file_entry> > known_file_list;
 
-        void dump() const;
-    };
+/**
+  * full known.met file content
+ */
+struct known_file_collection {
+    met_file_header m_header;
+    known_file_list m_known_file_list;
 
-    typedef container_holder<boost::uint32_t, std::deque<known_file_entry> > known_file_list;
+    known_file_collection();
+    add_transfer_params extract_transfer_params(time_t, const std::string&);
 
-    /**
-      * full known.met file content
-     */
-    struct known_file_collection
-    {
-        met_file_header     m_header;
-        known_file_list     m_known_file_list;
+    template <typename Archive>
+    void serialize(Archive& ar) {
+        ar& m_header;
+        ar& m_known_file_list;
+    }
 
-        known_file_collection();
-        add_transfer_params extract_transfer_params(time_t, const std::string&);
+    void dump() const;
+};
 
-        template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_header;
-            ar & m_known_file_list;
-        }
+/**
+  * structure for save transfer resume data and additional info like hash, filepath, filesize
+ */
+struct transfer_resume_data {
+    md4_hash m_hash;                                            //!< transfer hash
+    container_holder<boost::uint16_t, std::string> m_filename;  //!< utf-8 file name
+    size_type m_filesize;
+    bool m_seed;
+    tag_list<boost::uint8_t> m_fast_resume_data;
+    // transfer_resume_data();
+    transfer_resume_data(const md4_hash& hash, const std::string& filename, size_type size, bool seed,
+                         const std::vector<char>& fr_data)
+        : m_hash(hash), m_filename(filename), m_filesize(size), m_seed(seed) {
+        if (!fr_data.empty()) m_fast_resume_data.add_tag(make_blob_tag(fr_data, FT_FAST_RESUME_DATA, true));
+    }
 
-        void dump() const;
-    };
+    transfer_resume_data() : m_filesize(0), m_seed(false) {}
 
-    /**
-      * structure for save transfer resume data and additional info like hash, filepath, filesize
-     */
-    struct transfer_resume_data
-    {
-        md4_hash    m_hash;     //!< transfer hash
-        container_holder<boost::uint16_t, std::string> m_filename; //!< utf-8 file name
-        size_type     m_filesize;
-        bool          m_seed;
-        tag_list<boost::uint8_t>    m_fast_resume_data;
-        //transfer_resume_data();
-        transfer_resume_data(const md4_hash& hash,
-                const std::string& filename,
-                size_type size,
-                bool seed,
-                const std::vector<char>& fr_data) :
-        m_hash(hash), m_filename(filename), m_filesize(size), m_seed(seed)
-        {
-            if (!fr_data.empty())
-                m_fast_resume_data.add_tag(make_blob_tag(fr_data, FT_FAST_RESUME_DATA, true));
-        }
+    template <typename Archive>
+    void serialize(Archive& ar) {
+        ar& m_hash;
+        ar& m_filename;
+        ar& m_filesize;
+        ar& m_seed;
+        ar& m_fast_resume_data;
+    }
+};
 
-        transfer_resume_data() : m_filesize(0), m_seed(false)
-        {}
+struct file2atp : public std::binary_function<const std::string&, bool&, std::pair<add_transfer_params, error_code> > {
+    std::pair<add_transfer_params, error_code> operator()(const std::string&, const bool&);
+};
 
+class transfer_params_maker {
+   public:
+    transfer_params_maker(alert_manager& am, const std::string& known_filepath);
+    virtual ~transfer_params_maker();
+    bool start();
+    void stop();
+    void operator()();
 
-        template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hash;
-            ar & m_filename;
-            ar & m_filesize;
-            ar & m_seed;
-            ar & m_fast_resume_data;
-        }
-    };
-
-    struct file2atp : public std::binary_function<const std::string&, bool&, std::pair<add_transfer_params, error_code> >
-    {
-        std::pair<add_transfer_params, error_code> operator()(const std::string&, const bool&);
-    };
-
-    class transfer_params_maker
-    {
-    public:
-        transfer_params_maker(alert_manager& am, const std::string& known_filepath);
-        virtual ~transfer_params_maker();
-        bool start();
-        void stop();
-        void operator()();
-
-        size_t order_size();
-        std::string current_filepath();
-
-        /**
-          * @param filepath in UTF-8
-         */
-        void make_transfer_params(const std::string& filepath);
-        void cancel_transfer_params(const std::string& filepath);
-    protected:
-        virtual void process_item();
-        alert_manager&      m_am;
-        mutable bool        m_abort;                //!< cancel thread
-        mutable bool        m_abort_current;       //!< cancel one file
-        std::string         m_current_filepath;     //!< current file path
-    private:
-        std::string m_known_filepath;
-        known_file_collection m_kfc;
-        boost::shared_ptr<boost::thread> m_thread;
-
-        boost::mutex m_mutex;
-        std::deque<std::string>    m_order;
-        std::queue<std::string>    m_cancel_order;  //!< order for store signals to cancel after
-        boost::condition           m_condition;
-
-    };
+    size_t order_size();
+    std::string current_filepath();
 
     /**
-      * structure for save/load binary emulecollection files
+      * @param filepath in UTF-8
      */
-    struct emule_binary_collection
-    {
-        boost::uint32_t m_nVersion;
-        tag_list<boost::uint32_t>   m_list;
-        container_holder<boost::uint32_t, std::vector<tag_list<boost::uint32_t> > >   m_files;
+    void make_transfer_params(const std::string& filepath);
+    void cancel_transfer_params(const std::string& filepath);
 
-        template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_nVersion;
-            ar & m_list;
-            ar & m_files;
-        }
+   protected:
+    virtual void process_item();
+    alert_manager& m_am;
+    mutable bool m_abort;            //!< cancel thread
+    mutable bool m_abort_current;    //!< cancel one file
+    std::string m_current_filepath;  //!< current file path
+   private:
+    std::string m_known_filepath;
+    known_file_collection m_kfc;
+    boost::shared_ptr<boost::thread> m_thread;
 
-        bool operator==(const emule_binary_collection& ec) const;
-        void dump() const;
-    };
+    boost::mutex m_mutex;
+    std::deque<std::string> m_order;
+    std::queue<std::string> m_cancel_order;  //!< order for store signals to cancel after
+    boost::condition m_condition;
+};
+
+/**
+  * structure for save/load binary emulecollection files
+ */
+struct emule_binary_collection {
+    boost::uint32_t m_nVersion;
+    tag_list<boost::uint32_t> m_list;
+    container_holder<boost::uint32_t, std::vector<tag_list<boost::uint32_t> > > m_files;
+
+    template <typename Archive>
+    void serialize(Archive& ar) {
+        ar& m_nVersion;
+        ar& m_list;
+        ar& m_files;
+    }
+
+    bool operator==(const emule_binary_collection& ec) const;
+    void dump() const;
+};
+
+/**
+  * one file collection entry
+ */
+struct emule_collection_entry {
+    emule_collection_entry() : m_filename(""), m_filesize(0) {}
+
+    emule_collection_entry(const std::string& strFilename, size_type nFilesize, const md4_hash& hash)
+        : m_filename(strFilename), m_filesize(nFilesize), m_filehash(hash) {}
+
+    bool operator==(const emule_collection_entry& ce) const {
+        return (m_filename == ce.m_filename && m_filesize == ce.m_filesize && m_filehash == ce.m_filehash);
+    }
+
+    bool defined() const { return (!m_filename.empty() && m_filesize != 0 && m_filehash.defined()); }
+
+    std::string m_filename;
+    size_type m_filesize;
+    md4_hash m_filehash;
+};
+
+/**
+  * files collection
+ */
+struct emule_collection {
+    /**
+      * restore collection from file
+     */
+    static emule_collection fromFile(const std::string& strFilename);
 
     /**
-      * one file collection entry
+      * generate ed2k link from collection item
      */
-    struct emule_collection_entry
-    {
-        emule_collection_entry() : m_filename(""), m_filesize(0)
-        {
-        }
+    static std::string toLink(const std::string& strFilename, size_type nFilesize, const md4_hash& hFile,
+                              bool uencode = false);
+    static emule_collection_entry fromLink(const std::string& strLink);
 
-        emule_collection_entry(const std::string& strFilename, size_type nFilesize, const md4_hash& hash) :
-            m_filename(strFilename), m_filesize(nFilesize), m_filehash(hash) {}
-
-        bool operator==(const emule_collection_entry& ce) const
-        {
-            return (m_filename == ce.m_filename &&
-                    m_filesize == ce.m_filesize &&
-                    m_filehash == ce.m_filehash);
-        }
-
-        bool defined() const
-        {
-            return (!m_filename.empty() && m_filesize != 0 && m_filehash.defined());
-        }
-
-        std::string     m_filename;
-        size_type       m_filesize;
-        md4_hash        m_filehash;
-    };
+    bool save(const std::string& strFilename, bool binary = false);
 
     /**
-      * files collection
+      * add known file
      */
-    struct emule_collection
-    {
-        /**
-          * restore collection from file
-         */
-        static emule_collection fromFile(const std::string& strFilename);
+    bool add_file(const std::string& strFilename, size_type nFilesize, const std::string& strFilehash);
+    bool add_link(const std::string& strLink);
 
-        /**
-          * generate ed2k link from collection item
-         */
-        static std::string toLink(const std::string& strFilename, size_type nFilesize, const md4_hash& hFile, bool uencode = false);
-        static emule_collection_entry fromLink(const std::string& strLink);
+    const std::string get_ed2k_link(size_t nIndex);
+    bool operator==(const emule_collection& ecoll) const;
+    std::string m_name;
+    std::deque<emule_collection_entry> m_files;
+};
 
-        bool save(const std::string& strFilename, bool binary = false);
+// server identifier in server.met file
+struct server_met_entry {
+    net_identifier m_network_point;
+    tag_list<boost::uint32_t> m_list;
 
-        /**
-          * add known file
-         */
-        bool add_file(const std::string& strFilename, size_type nFilesize, const std::string& strFilehash);
-        bool add_link(const std::string& strLink);
+    template <typename Archive>
+    void serialize(Archive& ar) {
+        ar& m_network_point;
+        ar& m_list;
+    }
 
-        const std::string get_ed2k_link(size_t nIndex);
-        bool operator==(const emule_collection& ecoll) const;
-        std::string                         m_name;
-        std::deque<emule_collection_entry>  m_files;
-    };
+    bool operator==(const server_met_entry& e) const { return m_network_point == e.m_network_point; }
 
-    // server identifier in server.met file
-    struct server_met_entry
-    {
-        net_identifier              m_network_point;
-        tag_list<boost::uint32_t>   m_list;
+    bool operator<(const server_met_entry& e) const { return m_network_point < e.m_network_point; }
 
-        template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_network_point;
-            ar & m_list;
-        }
+    bool operator!=(const server_met_entry& e) const { return m_network_point != e.m_network_point; }
+};
 
-        bool operator==(const server_met_entry& e) const
-        {
-            return m_network_point == e.m_network_point;
-        }
+struct server_met {
+    met_file_header m_header;
+    container_holder<boost::uint32_t, std::deque<server_met_entry> > m_servers;
 
-        bool operator<(const server_met_entry& e) const
-        {
-            return m_network_point < e.m_network_point;
-        }
-
-        bool operator!=(const server_met_entry& e) const
-        {
-            return m_network_point != e.m_network_point;
-        }
-    };
-
-    struct server_met
-    {
-        met_file_header                                                     m_header;
-        container_holder<boost::uint32_t, std::deque<server_met_entry> >    m_servers;
-
-        template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_header;
-            ar & m_servers;
-        }
-    };
+    template <typename Archive>
+    void serialize(Archive& ar) {
+        ar& m_header;
+        ar& m_servers;
+    }
+};
 }
 
-#endif //__FILE__HPP__
+#endif  //__FILE__HPP__

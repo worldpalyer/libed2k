@@ -47,107 +47,105 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/ptime.hpp"
 #include "libed2k/packet_struct.hpp"
 
-namespace libed2k { namespace aux { struct session_impl; } }
+namespace libed2k {
+namespace aux {
+struct session_impl;
+}
+}
 
-namespace libed2k { namespace dht
-{
+namespace libed2k {
+namespace dht {
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 LIBED2K_DECLARE_LOG(rpc);
 #endif
 
-struct null_observer : public observer
-{
-	null_observer(boost::intrusive_ptr<traversal_algorithm> const& a
-		, udp::endpoint const& ep, node_id const& id): observer(a, ep, id) {}
+struct null_observer : public observer {
+    null_observer(boost::intrusive_ptr<traversal_algorithm> const& a, udp::endpoint const& ep, node_id const& id)
+        : observer(a, ep, id) {}
 
-  virtual void reply(const kad2_pong&, udp::endpoint ep) { flags |= flag_done; }
-  virtual void reply(const kad2_hello_res&, udp::endpoint ep) { flags |= flag_done; }
-  virtual void reply(const kad2_bootstrap_res&, udp::endpoint ep) { flags |= flag_done; }
-  virtual void reply(const kademlia2_res&, udp::endpoint ep) { flags |= flag_done; }
+    virtual void reply(const kad2_pong&, udp::endpoint ep) { flags |= flag_done; }
+    virtual void reply(const kad2_hello_res&, udp::endpoint ep) { flags |= flag_done; }
+    virtual void reply(const kad2_bootstrap_res&, udp::endpoint ep) { flags |= flag_done; }
+    virtual void reply(const kademlia2_res&, udp::endpoint ep) { flags |= flag_done; }
 };
 
 class routing_table;
 
-class LIBED2K_EXTRA_EXPORT rpc_manager
-{
-public:
-	typedef bool (*send_fun)(void* userdata, const udp_message&, udp::endpoint const&, int);
+class LIBED2K_EXTRA_EXPORT rpc_manager {
+   public:
+    typedef bool (*send_fun)(void* userdata, const udp_message&, udp::endpoint const&, int);
 
-	rpc_manager(node_id const& our_id
-		, routing_table& table, send_fun const& sf
-		, void* userdata, uint16_t port);
-	~rpc_manager();
+    rpc_manager(node_id const& our_id, routing_table& table, send_fun const& sf, void* userdata, uint16_t port);
+    ~rpc_manager();
 
-	void unreachable(udp::endpoint const& ep);
+    void unreachable(udp::endpoint const& ep);
 
     // returns true if the node needs a refresh
     // if so, id is assigned the node id to refresh
-    template<typename T>
+    template <typename T>
     bool incoming(const T&, udp::endpoint target, node_id* id);
 
-    template<typename T>
+    template <typename T>
     node_id extract_packet_node_id(const T&);
 
-	time_duration tick();
-
+    time_duration tick();
 
     /**
       * standard rpc invocation
     */
-    template<typename T>
+    template <typename T>
     bool invoke(T& t, udp::endpoint target, observer_ptr o);
 
-    template<typename T>
+    template <typename T>
     void append_data(T& t) const;
 
     /**
       * returns packet kad identifier for separate different transaction to the same endpoint and transaction id
       * currently uses only for pair of packets kademlia2_req <-> kademlia2_res
-      * kademlia2_req target identifier writes to observer and id extractes from kademlia2_res for additional verification
+      * kademlia2_req target identifier writes to observer and id extractes from kademlia2_res for additional
+     * verification
       * for all other packets return default equal kad id
     */
-    template<typename T>
+    template <typename T>
     kad_id packet_kad_identifier(const T& t) const {
         return kad_id();
     }
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-    template<typename T>
+    template <typename T>
     std::string request_name(const T& t) const;
 #endif
 
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
-	size_t allocation_size() const;
+    size_t allocation_size() const;
 #endif
 #ifdef LIBED2K_DEBUG
-	void check_invariant() const;
+    void check_invariant() const;
 #endif
 
-	void* allocate_observer();
-	void free_observer(void* ptr);
+    void* allocate_observer();
+    void free_observer(void* ptr);
 
-	int num_allocated_observers() const { return m_allocated_observers; }
-private:
+    int num_allocated_observers() const { return m_allocated_observers; }
 
-	mutable boost::pool<> m_pool_allocator;
+   private:
+    mutable boost::pool<> m_pool_allocator;
 
-	typedef std::list<observer_ptr> transactions_t;
-	transactions_t m_transactions;
-	
-	send_fun m_send;
-	void* m_userdata;
-	node_id m_our_id;
-	routing_table& m_table;
-	ptime m_timer;
-	node_id m_random_number;
-	int m_allocated_observers;
-	bool m_destructing;
-	uint16_t m_port;
+    typedef std::list<observer_ptr> transactions_t;
+    transactions_t m_transactions;
+
+    send_fun m_send;
+    void* m_userdata;
+    node_id m_our_id;
+    routing_table& m_table;
+    ptime m_timer;
+    node_id m_random_number;
+    int m_allocated_observers;
+    bool m_destructing;
+    uint16_t m_port;
 };
-
-} } // namespace libed2k::dht
+}
+}  // namespace libed2k::dht
 
 #endif
-
-

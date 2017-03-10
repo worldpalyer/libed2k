@@ -41,8 +41,7 @@ namespace libed2k {
 
 // timestamp history keeps a history of the lowest timestamps we've
 // seen in the last 20 minutes
-struct timestamp_history
-{
+struct timestamp_history {
     enum { history_size = 20 };
 
     timestamp_history() : m_index(0), m_initialized(false), m_base(0), m_num_samples(0) {}
@@ -51,11 +50,13 @@ struct timestamp_history
     // add a sample to the timestamp history. If step is true, it's been
     // a minute since the last step
     boost::uint32_t add_sample(boost::uint32_t sample, bool step);
-    boost::uint32_t base() const { LIBED2K_ASSERT(m_initialized); return m_base; }
+    boost::uint32_t base() const {
+        LIBED2K_ASSERT(m_initialized);
+        return m_base;
+    }
     void adjust_base(int change);
 
-private:
-
+   private:
     // this is a circular buffer
     boost::uint32_t m_history[history_size];
 
@@ -63,7 +64,7 @@ private:
     // in the circular buffer
     boost::uint16_t m_index;
 
-    bool m_initialized:1;
+    bool m_initialized : 1;
 
     // this is the lowest sample seen in the
     // last 'history_size' minutes
@@ -74,7 +75,6 @@ private:
     // don't have enough samples, we won't step
     int m_num_samples;
 };
-
 }
 
 #endif

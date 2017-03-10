@@ -48,80 +48,73 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "libed2k/thread.hpp"
 
-namespace libed2k
-{
+namespace libed2k {
 
-class LIBED2K_EXTRA_EXPORT connection_queue : public boost::noncopyable
-{
-public:
-	connection_queue(io_service& ios);
+class LIBED2K_EXTRA_EXPORT connection_queue : public boost::noncopyable {
+   public:
+    connection_queue(io_service& ios);
 
-	// if there are no free slots, returns the negative
-	// number of queued up connections
-	int free_slots() const;
+    // if there are no free slots, returns the negative
+    // number of queued up connections
+    int free_slots() const;
 
-	void enqueue(boost::function<void(int)> const& on_connect
-		, boost::function<void()> const& on_timeout
-		, time_duration timeout, int priority = 0);
-	void done(int ticket);
-	void limit(int limit);
-	int limit() const;
-	void close();
-	int size() const { return m_queue.size(); }
+    void enqueue(boost::function<void(int)> const& on_connect, boost::function<void()> const& on_timeout,
+                 time_duration timeout, int priority = 0);
+    void done(int ticket);
+    void limit(int limit);
+    int limit() const;
+    void close();
+    int size() const { return m_queue.size(); }
 
 #ifdef LIBED2K_DEBUG
-	void check_invariant() const;
+    void check_invariant() const;
 #endif
 
-private:
+   private:
+    typedef mutex mutex_t;
 
-	typedef mutex mutex_t;
+    void try_connect(mutex_t::scoped_lock& l);
+    void on_timeout(error_code const& e);
+    void on_try_connect();
 
-	void try_connect(mutex_t::scoped_lock& l);
-	void on_timeout(error_code const& e);
-	void on_try_connect();
+    struct entry {
+        entry() : connecting(false), ticket(0), expires(max_time()), priority(0) {}
+        // called when the connection is initiated
+        // this is when the timeout countdown starts
+        boost::function<void(int)> on_connect;
+        // called if done hasn't been called within the timeout
+        // or if the connection queue aborts. This means there
+        // are 3 different interleaves of these function calls:
+        // 1. on_connect
+        // 2. on_connect, on_timeout
+        // 3. on_timeout
+        boost::function<void()> on_timeout;
+        bool connecting;
+        int ticket;
+        ptime expires;
+        time_duration timeout;
+        int priority;
+    };
 
-	struct entry
-	{
-		entry(): connecting(false), ticket(0), expires(max_time()), priority(0) {}
-		// called when the connection is initiated
-		// this is when the timeout countdown starts
-		boost::function<void(int)> on_connect;
-		// called if done hasn't been called within the timeout
-		// or if the connection queue aborts. This means there
-		// are 3 different interleaves of these function calls:
-		// 1. on_connect
-		// 2. on_connect, on_timeout
-		// 3. on_timeout
-		boost::function<void()> on_timeout;
-		bool connecting;
-		int ticket;
-		ptime expires;
-		time_duration timeout;
-		int priority;
-	};
+    std::list<entry> m_queue;
 
-	std::list<entry> m_queue;
+    // the next ticket id a connection will be given
+    int m_next_ticket;
+    int m_num_connecting;
+    int m_half_open_limit;
+    bool m_abort;
 
-	// the next ticket id a connection will be given
-	int m_next_ticket;
-	int m_num_connecting;
-	int m_half_open_limit;
-	bool m_abort;
+    deadline_timer m_timer;
 
-	deadline_timer m_timer;
-
-	mutable mutex_t m_mutex;
+    mutable mutex_t m_mutex;
 
 #ifdef LIBED2K_DEBUG
-	bool m_in_timeout_function;
+    bool m_in_timeout_function;
 #endif
 #ifdef LIBED2K_CONNECTION_LOGGING
-	std::ofstream m_log;
+    std::ofstream m_log;
 #endif
 };
-
 }
 
 #endif
-

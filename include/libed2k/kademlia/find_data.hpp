@@ -47,8 +47,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/function/function1.hpp>
 #include <boost/function/function2.hpp>
 
-namespace libed2k { namespace dht
-{
+namespace libed2k {
+namespace dht {
 
 typedef std::vector<char> packet_t;
 
@@ -57,56 +57,47 @@ class node_impl;
 
 // -------- find data -----------
 
-//TODO: rename this to find_peers
-class find_data : public traversal_algorithm
-{
-public:
-	typedef boost::function<void(kad_id const&)> data_callback;
-	typedef boost::function<void(std::vector<std::pair<node_entry, std::string> > const&, bool)> nodes_callback;
+// TODO: rename this to find_peers
+class find_data : public traversal_algorithm {
+   public:
+    typedef boost::function<void(kad_id const&)> data_callback;
+    typedef boost::function<void(std::vector<std::pair<node_entry, std::string> > const&, bool)> nodes_callback;
 
-	find_data(node_impl& node, node_id target
-		, data_callback const& dcallback
-		, nodes_callback const& ncallback
-        , uint8_t search_type);
+    find_data(node_impl& node, node_id target, data_callback const& dcallback, nodes_callback const& ncallback,
+              uint8_t search_type);
 
-	virtual char const* name() const { return "get_peers"; }
+    virtual char const* name() const { return "get_peers"; }
 
-	node_id const target() const { return m_target; }
+    node_id const target() const { return m_target; }
 
-protected:
+   protected:
+    void done();
+    observer_ptr new_observer(void* ptr, udp::endpoint const& ep, node_id const& id);
+    virtual bool invoke(observer_ptr o);
 
-	void done();
-	observer_ptr new_observer(void* ptr, udp::endpoint const& ep, node_id const& id);
-	virtual bool invoke(observer_ptr o);
-
-private:
-
-	data_callback m_data_callback;
-	nodes_callback m_nodes_callback;
-	node_id const m_target;
+   private:
+    data_callback m_data_callback;
+    nodes_callback m_nodes_callback;
+    node_id const m_target;
     node_id const m_id;
-	bool m_done:1;
-	bool m_got_peers:1;
-    uint8_t  m_search_type;
+    bool m_done : 1;
+    bool m_got_peers : 1;
+    uint8_t m_search_type;
 };
 
-class find_data_observer : public observer
-{
-public:
-	find_data_observer(
-		boost::intrusive_ptr<traversal_algorithm> const& algorithm
-		, udp::endpoint const& ep, node_id const& id)
-		: observer(algorithm, ep, id)
-	{}
+class find_data_observer : public observer {
+   public:
+    find_data_observer(boost::intrusive_ptr<traversal_algorithm> const& algorithm, udp::endpoint const& ep,
+                       node_id const& id)
+        : observer(algorithm, ep, id) {}
 
-    // this is called when a reply is received 
+    // this is called when a reply is received
     virtual void reply(const kad2_pong&, udp::endpoint ep);
     virtual void reply(const kad2_hello_res&, udp::endpoint ep);
     virtual void reply(const kad2_bootstrap_res&, udp::endpoint ep);
     virtual void reply(const kademlia2_res&, udp::endpoint ep);
 };
+}
+}  // namespace libed2k::dht
 
-} } // namespace libed2k::dht
-
-#endif // FIND_DATA_050323_HPP
-
+#endif  // FIND_DATA_050323_HPP

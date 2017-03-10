@@ -21,13 +21,12 @@
   Mark Adler    madler@alumni.caltech.edu
  */
 
-
 /*
  * See puff.c for purpose and usage.
  */
 #include <boost/cstdint.hpp>
 
-int puff(unsigned char *dest,           /* pointer to destination pointer */
-         boost::uint32_t *destlen,        /* amount of output space */
-         unsigned char *source,         /* pointer to source data pointer */
-         boost::uint32_t *sourcelen);     /* amount of input available */
+int puff(unsigned char* dest,         /* pointer to destination pointer */
+         boost::uint32_t* destlen,    /* amount of output space */
+         unsigned char* source,       /* pointer to source data pointer */
+         boost::uint32_t* sourcelen); /* amount of input available */

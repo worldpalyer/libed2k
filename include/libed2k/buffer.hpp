@@ -35,72 +35,65 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <cstring>
 #include "libed2k/invariant_check.hpp"
 #include "libed2k/assert.hpp"
-#include <cstdlib> // malloc/free/realloc
+#include <cstdlib>  // malloc/free/realloc
 
 namespace libed2k {
 
-class buffer
-{
-public:
-    struct interval
-    {
-        interval() : begin(0), end(0)
-        {}
+class buffer {
+   public:
+    struct interval {
+        interval() : begin(0), end(0) {}
 
-        interval(char* b, char* e) : begin(b) , end(e)
-        {}
+        interval(char* b, char* e) : begin(b), end(e) {}
 
-        char operator[](int index) const
-        {
+        char operator[](int index) const {
             LIBED2K_ASSERT(begin + index < end);
             return begin[index];
         }
 
-        int left() const { LIBED2K_ASSERT(end >= begin); return end - begin; }
+        int left() const {
+            LIBED2K_ASSERT(end >= begin);
+            return end - begin;
+        }
 
         char* begin;
         char* end;
     };
 
-    struct const_interval
-    {
-        const_interval(interval const& i) : begin(i.begin), end(i.end)
-        {}
+    struct const_interval {
+        const_interval(interval const& i) : begin(i.begin), end(i.end) {}
 
-        const_interval(char const* b, char const* e) : begin(b), end(e)
-        {}
+        const_interval(char const* b, char const* e) : begin(b), end(e) {}
 
-        char operator[](int index) const
-        {
+        char operator[](int index) const {
             LIBED2K_ASSERT(begin + index < end);
             return begin[index];
         }
 
-        bool operator==(const const_interval& p_interval)
-        {
+        bool operator==(const const_interval& p_interval) {
             return (begin == p_interval.begin && end == p_interval.end);
         }
 
-        int left() const { LIBED2K_ASSERT(end >= begin); return end - begin; }
+        int left() const {
+            LIBED2K_ASSERT(end >= begin);
+            return end - begin;
+        }
 
         char const* begin;
         char const* end;
     };
 
-    buffer(std::size_t n = 0) : m_begin(0), m_end(0), m_last(0)
-    {
+    buffer(std::size_t n = 0) : m_begin(0), m_end(0), m_last(0) {
         if (n) resize(n);
     }
 
-    buffer(buffer const& b) : m_begin(0), m_end(0), m_last(0)
-    {
+    buffer(buffer const& b) : m_begin(0), m_end(0), m_last(0) {
         if (b.size() == 0) return;
         resize(b.size());
         std::memcpy(m_begin, b.begin(), b.size());
     }
 
-    buffer& operator=(buffer const& b)
-    {
+    buffer& operator=(buffer const& b) {
         if (&b == this) return *this;
         resize(b.size());
         if (b.size() == 0) return *this;
@@ -108,25 +101,19 @@ public:
         return *this;
     }
 
-    ~buffer()
-    {
-        std::free(m_begin);
-    }
+    ~buffer() { std::free(m_begin); }
 
     buffer::interval data() { return interval(m_begin, m_end); }
     buffer::const_interval data() const { return const_interval(m_begin, m_end); }
 
-    void resize(std::size_t n)
-    {
+    void resize(std::size_t n) {
         reserve(n);
         m_end = m_begin + n;
     }
 
-    void insert(char* point, char const* first, char const* last)
-    {
+    void insert(char* point, char const* first, char const* last) {
         std::size_t p = point - m_begin;
-        if (point == m_end)
-        {
+        if (point == m_end) {
             resize(size() + last - first);
             std::memcpy(m_begin + p, first, last - first);
             return;
@@ -137,25 +124,22 @@ public:
         std::memcpy(m_begin + p, first, last - first);
     }
 
-    void erase(char* b, char* e)
-    {
+    void erase(char* b, char* e) {
         LIBED2K_ASSERT(e <= m_end);
         LIBED2K_ASSERT(b >= m_begin);
         LIBED2K_ASSERT(b <= e);
-        if (e == m_end)
-        {
+        if (e == m_end) {
             resize(b - m_begin);
             return;
         }
         std::memmove(b, e, m_end - e);
         m_end = b + (m_end - e);
-     }
+    }
 
     void clear() { m_end = m_begin; }
     std::size_t size() const { return m_end - m_begin; }
     std::size_t capacity() const { return m_last - m_begin; }
-    void reserve(std::size_t n)
-    {
+    void reserve(std::size_t n) {
         if (n <= capacity()) return;
         LIBED2K_ASSERT(n > 0);
 
@@ -166,28 +150,32 @@ public:
     }
 
     bool empty() const { return m_begin == m_end; }
-    char& operator[](std::size_t i) { LIBED2K_ASSERT(i < size()); return m_begin[i]; }
-    char const& operator[](std::size_t i) const { LIBED2K_ASSERT(i < size()); return m_begin[i]; }
+    char& operator[](std::size_t i) {
+        LIBED2K_ASSERT(i < size());
+        return m_begin[i];
+    }
+    char const& operator[](std::size_t i) const {
+        LIBED2K_ASSERT(i < size());
+        return m_begin[i];
+    }
 
     char* begin() { return m_begin; }
     char const* begin() const { return m_begin; }
     char* end() { return m_end; }
     char const* end() const { return m_end; }
 
-    void swap(buffer& b)
-    {
+    void swap(buffer& b) {
         using std::swap;
         swap(m_begin, b.m_begin);
         swap(m_end, b.m_end);
         swap(m_last, b.m_last);
     }
-private:
-    char* m_begin; // first
-    char* m_end; // one passed end of size
-    char* m_last; // one passed end of allocation
+
+   private:
+    char* m_begin;  // first
+    char* m_end;    // one passed end of size
+    char* m_last;   // one passed end of allocation
 };
-
-
 }
 
-#endif // LIBED2K_BUFFER_HPP
+#endif  // LIBED2K_BUFFER_HPP

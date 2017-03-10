@@ -57,19 +57,17 @@ namespace boost {
 namespace asio {
 
 class io_service;
-
 }
 #if BOOST_VERSION >= 103500
 }
 #endif
 
-namespace libed2k
-{
+namespace libed2k {
 
 #if BOOST_VERSION < 103500
-    typedef ::asio::io_service io_service;
+typedef ::asio::io_service io_service;
 #else
-    typedef boost::asio::io_service io_service;
+typedef boost::asio::io_service io_service;
 #endif
 }
 

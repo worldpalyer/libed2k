@@ -58,14 +58,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/asio/ssl/context.hpp>
 #endif
 
-namespace libed2k
-{
+namespace libed2k {
 
 struct http_connection;
 class connection_queue;
 
-typedef boost::function<void(
-        error_code const&, http_parser const&, char const* data, int size, http_connection&)> http_handler;
+typedef boost::function<void(error_code const&, http_parser const&, char const* data, int size, http_connection&)>
+    http_handler;
 
 typedef boost::function<void(http_connection&)> http_connect_handler;
 
@@ -73,42 +72,40 @@ typedef boost::function<void(http_connection&, std::list<tcp::endpoint>&)> http_
 
 // when bottled, the last two arguments to the handler
 // will always be 0
-struct http_connection : boost::enable_shared_from_this<http_connection>, boost::noncopyable
-{
-    http_connection(io_service& ios, connection_queue& cc,
-                    http_handler const& handler, bool bottled = true,
+struct http_connection : boost::enable_shared_from_this<http_connection>, boost::noncopyable {
+    http_connection(io_service& ios, connection_queue& cc, http_handler const& handler, bool bottled = true,
                     http_connect_handler const& ch = http_connect_handler(),
                     http_filter_handler const& fh = http_filter_handler()
 #ifdef LIBED2K_USE_OPENSSL
-        , boost::asio::ssl::context* ssl_ctx = 0
+                        ,
+                    boost::asio::ssl::context* ssl_ctx = 0
 #endif
-        );
+                    );
 
     ~http_connection();
 
     void rate_limit(int limit);
 
-    int rate_limit() const
-    { return m_rate_limit; }
+    int rate_limit() const { return m_rate_limit; }
 
     std::string sendbuffer;
 
-    void get(std::string const& url, time_duration timeout = seconds(30),
-             int prio = 0, proxy_settings const* ps = 0, int handle_redirects = 5,
-             std::string const& user_agent = "", address const& bind_addr = address_v4::any()
+    void get(std::string const& url, time_duration timeout = seconds(30), int prio = 0, proxy_settings const* ps = 0,
+             int handle_redirects = 5, std::string const& user_agent = "", address const& bind_addr = address_v4::any()
 #if LIBED2K_USE_I2P
-             , i2p_connection* i2p_conn = 0
+                                                                               ,
+             i2p_connection* i2p_conn = 0
 #endif
-        );
+             );
 
-    void start(std::string const& hostname, std::string const& port,
-               time_duration timeout, int prio = 0, proxy_settings const* ps = 0,
-               bool ssl = false, int handle_redirect = 5,
+    void start(std::string const& hostname, std::string const& port, time_duration timeout, int prio = 0,
+               proxy_settings const* ps = 0, bool ssl = false, int handle_redirect = 5,
                address const& bind_addr = address_v4::any()
 #if LIBED2K_USE_I2P
-               , i2p_connection* i2p_conn = 0
+                   ,
+               i2p_connection* i2p_conn = 0
 #endif
-        );
+               );
 
     void close(bool force = false);
 
@@ -116,8 +113,7 @@ struct http_connection : boost::enable_shared_from_this<http_connection>, boost:
 
     std::list<tcp::endpoint> const& endpoints() const { return m_endpoints; }
 
-private:
-
+   private:
 #if LIBED2K_USE_I2P
     void on_i2p_resolve(error_code const& e, char const* destination);
 #endif
@@ -206,7 +202,6 @@ private:
 
     bool m_abort;
 };
-
 }
 
 #endif

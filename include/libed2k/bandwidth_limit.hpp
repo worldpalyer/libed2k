@@ -41,16 +41,14 @@ POSSIBILITY OF SUCH DAMAGE.
 namespace libed2k {
 
 // member of peer_connection
-struct LIBED2K_EXTRA_EXPORT bandwidth_channel
-{
+struct LIBED2K_EXTRA_EXPORT bandwidth_channel {
     static const int inf = boost::integer_traits<int>::const_max;
 
     bandwidth_channel();
 
     // 0 means infinite
     void throttle(int limit);
-    int throttle() const
-    {
+    int throttle() const {
         LIBED2K_ASSERT_VAL(m_limit < INT_MAX, m_limit);
         return int(m_limit);
     }
@@ -71,8 +69,7 @@ struct LIBED2K_EXTRA_EXPORT bandwidth_channel
     // this is the number of bytes to distribute this round
     int distribute_quota;
 
-private:
-
+   private:
     // this is the amount of bandwidth we have
     // been assigned without using yet.
     boost::int64_t m_quota_left;
@@ -81,7 +78,6 @@ private:
     // per second we are allowed to use.
     boost::int64_t m_limit;
 };
-
 }
 
 #endif

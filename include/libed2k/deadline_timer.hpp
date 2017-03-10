@@ -53,7 +53,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/asio/basic_deadline_timer.hpp>
 #endif
 
-#ifdef __OBJC__ 
+#ifdef __OBJC__
 #undef Protocol
 #endif
 
@@ -62,42 +62,34 @@ POSSIBILITY OF SUCH DAMAGE.
 // asio time_traits
 #if !LIBED2K_USE_BOOST_DATE_TIME
 #if BOOST_VERSION >= 103500
-namespace boost { 
+namespace boost {
 #endif
-namespace asio
-{
-	template<>
-	struct time_traits<libed2k::ptime>
-	{
-		typedef libed2k::ptime time_type;
-		typedef libed2k::time_duration duration_type;
-		static time_type now()
-		{ return time_type(libed2k::time_now_hires()); }
-		static time_type add(time_type t, duration_type d)
-		{ return time_type(t.time + d.diff);}
-		static duration_type subtract(time_type t1, time_type t2)
-		{ return duration_type(t1 - t2); }
-		static bool less_than(time_type t1, time_type t2)
-		{ return t1 < t2; }
-		static boost::posix_time::time_duration to_posix_duration(
-			duration_type d)
-		{ return boost::posix_time::microseconds(total_microseconds(d)); }
-	};
+namespace asio {
+template <>
+struct time_traits<libed2k::ptime> {
+    typedef libed2k::ptime time_type;
+    typedef libed2k::time_duration duration_type;
+    static time_type now() { return time_type(libed2k::time_now_hires()); }
+    static time_type add(time_type t, duration_type d) { return time_type(t.time + d.diff); }
+    static duration_type subtract(time_type t1, time_type t2) { return duration_type(t1 - t2); }
+    static bool less_than(time_type t1, time_type t2) { return t1 < t2; }
+    static boost::posix_time::time_duration to_posix_duration(duration_type d) {
+        return boost::posix_time::microseconds(total_microseconds(d));
+    }
+};
 }
 #if BOOST_VERSION >= 103500
 }
 #endif
 #endif
 
-namespace libed2k
-{
+namespace libed2k {
 
 #if BOOST_VERSION < 103500
-	typedef ::asio::basic_deadline_timer<ptime> deadline_timer;
+typedef ::asio::basic_deadline_timer<ptime> deadline_timer;
 #else
-	typedef boost::asio::basic_deadline_timer<ptime> deadline_timer;
+typedef boost::asio::basic_deadline_timer<ptime> deadline_timer;
 #endif
 }
 
-#endif // LIBED2K_DEADLINE_TIMER_HPP_INCLUDED
-
+#endif  // LIBED2K_DEADLINE_TIMER_HPP_INCLUDED

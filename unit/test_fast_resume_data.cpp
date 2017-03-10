@@ -5,7 +5,7 @@
 #include <string>
 
 #ifdef STAND_ALONE
-#   define BOOST_TEST_MODULE Main
+#define BOOST_TEST_MODULE Main
 #endif
 
 #include <fstream>
@@ -17,12 +17,10 @@
 #include "libed2k/log.hpp"
 #include "libed2k/hasher.hpp"
 
-
 BOOST_AUTO_TEST_SUITE(test_fast_resume_data)
 
-BOOST_AUTO_TEST_CASE(test_shared_files)
-{
-    // temporary do nothing
+BOOST_AUTO_TEST_CASE(test_shared_files) {
+// temporary do nothing
 #if 0
     libed2k::fs::path fast_file = libed2k::fs::initial_path();
     fast_file /= "fastfile.dmp";
@@ -113,8 +111,7 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
 #endif
 }
 
-BOOST_AUTO_TEST_CASE(test_entries_hash)
-{
+BOOST_AUTO_TEST_CASE(test_entries_hash) {
     libed2k::md4_hash h1 = libed2k::md4_hash::fromString("200102030405060708090A0B0C0D0F0D");
     libed2k::md4_hash h2 = libed2k::md4_hash::fromString("300102030475060708090A0B0C0D0F0D");
     libed2k::md4_hash h3 = libed2k::md4_hash::fromString("4A0112030405060708090A0B0C0D0F0D");
@@ -124,8 +121,8 @@ BOOST_AUTO_TEST_CASE(test_entries_hash)
 
     libed2k::entry e(libed2k::entry::dictionary_t);
     // store current hashset
-    e["hash-keys"]    = libed2k::entry::list_type();
-    e["hash-values"]  = libed2k::entry::list_type();
+    e["hash-keys"] = libed2k::entry::list_type();
+    e["hash-values"] = libed2k::entry::list_type();
     libed2k::entry::list_type& hk = e["hash-keys"].list();
     libed2k::entry::list_type& hv = e["hash-values"].list();
 
@@ -170,7 +167,6 @@ BOOST_AUTO_TEST_CASE(test_entries_hash)
     BOOST_CHECK(lev->list_at(0)->string_value() == h1.toString());
     BOOST_CHECK(lev->list_at(1)->string_value() == h2.toString());
     BOOST_CHECK(lev->list_at(2)->string_value() == h3.toString());
-
 }
 
 BOOST_AUTO_TEST_SUITE_END()

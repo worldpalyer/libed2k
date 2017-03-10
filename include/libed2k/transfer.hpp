@@ -21,421 +21,402 @@
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/bandwidth_limit.hpp"
 
-namespace libed2k
-{
-    class transfer_info;
-    class add_transfer_params;
-    namespace aux{
-        class session_impl;
+namespace libed2k {
+class transfer_info;
+class add_transfer_params;
+namespace aux {
+class session_impl;
+}
+class peer;
+class server_request;
+class server_response;
+class piece_manager;
+struct disk_io_job;
+class session_settings;
+
+// a transfer is a class that holds information
+// for a specific download. It updates itself against
+// the tracker
+class transfer : public boost::enable_shared_from_this<transfer> {
+   public:
+    /**
+     * it is fake transfer constructor for using in unit tests
+     * you shouldn't it anywhere except unit tests
+     */
+    transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl, const md4_hash& hash,
+             const std::string& filename, size_type size);
+
+    transfer(aux::session_impl& ses, tcp::endpoint const& net_interface, int seq, add_transfer_params const& p);
+    ~transfer();
+
+    const md4_hash& hash() const;
+    size_type size() const;
+    const std::string& name() const;
+    const std::string& save_path() const;
+    std::string file_path() const;
+
+    const std::vector<md4_hash>& piece_hashses() const;
+    void piece_hashses(const std::vector<md4_hash>& hs);
+    const md4_hash& hash_for_piece(size_t piece) const;
+    add_transfer_params params() const;
+
+    transfer_handle handle();
+    void start();
+    void abort();
+    void set_state(transfer_status::state_t s);
+
+    aux::session_impl& session() { return m_ses; }
+    const session_settings& settings() const;
+
+    bool valid_metadata() const;
+
+    bool want_more_peers() const;
+    void request_peers();
+    void add_peer(const tcp::endpoint& peer, int source);
+    bool connect_to_peer(peer* peerinfo);
+    // used by peer_connection to attach itself to a torrent
+    // since incoming connections don't know what torrent
+    // they're a part of until they have received an info_hash.
+    // false means attach failed
+    bool attach_peer(peer_connection* peer);
+    // this will remove the peer and make sure all
+    // the pieces it had have their reference counter
+    // decreased in the piece_picker
+    void remove_peer(peer_connection* p);
+    void get_peer_info(std::vector<peer_info>& infos);
+    bool has_peer(peer_connection* p) const { return m_connections.find(p) != m_connections.end(); }
+
+    void disconnect_all(const error_code& ec);
+    int disconnect_peers(int num, const error_code& ec);
+    bool try_connect_peer();
+    void give_connect_points(int points);
+    bool has_error() const { return m_error; }
+
+    // the number of peers that belong to this transfer
+    int num_peers() const;
+    int num_seeds() const;
+
+    bool is_paused() const;
+    bool is_seed() const { return !m_picker || m_picker->num_have() == m_picker->num_pieces(); }
+
+    // this is true if we have all the pieces that we want
+    bool is_finished() const {
+        if (is_seed()) return true;
+        return (num_pieces() - m_picker->num_have() == 0);
     }
-    class peer;
-    class server_request;
-    class server_response;
-    class piece_manager;
-    struct disk_io_job;
-    class session_settings;
 
-    // a transfer is a class that holds information
-    // for a specific download. It updates itself against
-    // the tracker
-    class transfer : public boost::enable_shared_from_this<transfer>
-    {
-    public:
-        /**
-         * it is fake transfer constructor for using in unit tests
-         * you shouldn't it anywhere except unit tests
-         */
-        transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
-                 const md4_hash& hash, const std::string& filename, size_type size);
+    bool is_aborted() const { return m_abort; }
+    bool is_announced() const { return m_announced; }
+    void set_announced(bool announced) { m_announced = announced; }
+    transfer_status::state_t state() const { return m_state; }
+    transfer_status status() const;
 
-        transfer(aux::session_impl& ses, tcp::endpoint const& net_interface,
-                 int seq, add_transfer_params const& p);
-        ~transfer();
+    // this torrent changed state, if the user is subscribing to
+    // it, add it to the m_state_updates list in session_impl
+    void state_updated();
 
-        const md4_hash& hash() const;
-        size_type size() const;
-        const std::string& name() const;
-        const std::string& save_path() const;
-        std::string file_path() const;
+    void pause();
+    void resume();
+    void do_pause();
+    void do_resume();
 
-        const std::vector<md4_hash>& piece_hashses() const;
-        void piece_hashses(const std::vector<md4_hash>& hs);
-        const md4_hash& hash_for_piece(size_t piece) const;
-        add_transfer_params params() const;
+    void set_upload_limit(int limit);
+    int upload_limit() const;
+    void set_download_limit(int limit);
+    int download_limit() const;
 
-        transfer_handle handle();
-        void start();
-        void abort();
-        void set_state(transfer_status::state_t s);
+    void piece_availability(std::vector<int>& avail) const;
 
-        aux::session_impl& session() { return m_ses; }
-        const session_settings& settings() const;
+    void set_piece_priority(int index, int priority);
+    int piece_priority(int index) const;
+    void piece_priorities(std::vector<int>* pieces) const;
 
-        bool valid_metadata() const;
+    int priority() const;
+    void set_priority(int prio);
 
-        bool want_more_peers() const;
-        void request_peers();
-        void add_peer(const tcp::endpoint& peer, int source);
-        bool connect_to_peer(peer* peerinfo);
-        // used by peer_connection to attach itself to a torrent
-        // since incoming connections don't know what torrent
-        // they're a part of until they have received an info_hash.
-        // false means attach failed
-        bool attach_peer(peer_connection* peer);
-        // this will remove the peer and make sure all
-        // the pieces it had have their reference counter
-        // decreased in the piece_picker
-        void remove_peer(peer_connection* p);
-        void get_peer_info(std::vector<peer_info>& infos);
-        bool has_peer(peer_connection* p) const
-        { return m_connections.find(p) != m_connections.end(); }
+    void set_sequential_download(bool sd);
+    bool is_sequential_download() const { return m_sequential_download; }
 
-        void disconnect_all(const error_code& ec);
-        int disconnect_peers(int num, const error_code& ec);
-        bool try_connect_peer();
-        void give_connect_points(int points);
-        bool has_error() const { return m_error; }
+    int queue_position() const { return m_sequence_number; }
 
-        // the number of peers that belong to this transfer
-        int num_peers() const;
-        int num_seeds() const;
+    void second_tick(stat& accumulator, int tick_interval_ms, const ptime& now);
 
-        bool is_paused() const;
-        bool is_seed() const
-        {
-            return !m_picker || m_picker->num_have() == m_picker->num_pieces();
+    // this is called wheh the transfer has completed
+    // the download. It will post an event, disconnect
+    // all seeds and let the tracker know we're finished.
+    void completed();
+
+    // this is called when the transfer has finished. i.e.
+    // all the pieces we have not filtered have been downloaded.
+    // If no pieces are filtered, this is called first and then
+    // completed() is called immediately after it.
+    void finished();
+
+    stat statistics() const { return m_stat; }
+    void add_stats(const stat& s);
+
+    void ip_filter_updated() { m_policy.ip_filter_updated(); }
+
+    void set_upload_mode(bool b);
+    bool upload_mode() const { return m_upload_mode; }
+
+    bool eager_mode() const { return m_eager_mode; }
+    void set_eager_mode(bool b) { m_eager_mode = b; }
+
+    // --------------------------------------------
+    // PIECE MANAGEMENT
+    // --------------------------------------------
+    void async_verify_piece(int piece_index, const md4_hash& hash, const boost::function<void(int)>& f);
+
+    // this is called from the peer_connection
+    // each time a piece has failed the hash test
+    void piece_finished(int index, int passed_hash_check);
+
+    // piece_passed is called when a piece passes the hash check
+    // this will tell all peers that we just got his piece
+    // and also let the piece picker know that we have this piece
+    // so it wont pick it for download
+    void piece_passed(int index);
+
+    // piece_failed is called when a piece fails the hash check
+    void piece_failed(int index);
+
+    // this will restore the piece picker state for a piece
+    // by re marking all the requests to blocks in this piece
+    // that are still outstanding in peers' download queues.
+    // this is done when a piece fails
+    void restore_piece_state(int index);
+
+    bool has_picker() const { return m_picker.get() != 0; }
+    piece_picker& picker() { return *m_picker; }
+
+    policy& get_policy() { return m_policy; }
+
+    // returns true if we have downloaded the given piece
+    bool have_piece(int index) const { return has_picker() ? m_picker->have_piece(index) : true; }
+    bitfield have_pieces() const;
+
+    // called when we learn that we have a piece
+    // only once per piece
+    void we_have(int index);
+
+    size_t num_have() const { return has_picker() ? m_picker->num_have() : num_pieces(); }
+
+    void peer_has(int index) {
+        if (m_picker.get()) {
+            assert(!is_seed());
+            m_picker->inc_refcount(index);
+        } else {
+            assert(is_seed());
         }
+    }
 
-        // this is true if we have all the pieces that we want
-        bool is_finished() const
-        {
-            if (is_seed()) return true;
-            return (num_pieces() - m_picker->num_have() == 0);
-        }
+    size_t num_pieces() const;
+    size_t num_free_blocks() const;
 
-        bool is_aborted() const { return m_abort; }
-        bool is_announced() const { return m_announced; }
-        void set_announced(bool announced) { m_announced = announced; }
-        transfer_status::state_t state() const { return m_state; }
-        transfer_status status() const;
+    piece_manager& filesystem() { return *m_storage; }
+    storage_interface* get_storage();
+    void move_storage(const std::string& save_path);
+    bool rename_file(const std::string& name);
+    void delete_files();
 
-        // this torrent changed state, if the user is subscribing to
-        // it, add it to the m_state_updates list in session_impl
-        void state_updated();
+    // unless this returns true, new connections must wait
+    // with their initialization.
+    bool ready_for_connections() const { return true; }
 
-        void pause();
-        void resume();
-        void do_pause();
-        void do_resume();
+    boost::uint32_t getAcepted() const { return m_accepted; }
+    boost::uint32_t getResuested() const { return m_requested; }
+    boost::uint64_t getTransferred() const { return m_transferred; }
+    boost::uint8_t getPriority() const { return m_priority; }
 
-        void set_upload_limit(int limit);
-        int upload_limit() const;
-        void set_download_limit(int limit);
-        int download_limit() const;
+    /** async generate fast resume data and emit alert */
+    void save_resume_data(int flags);
+    bool need_save_resume_data() const { return m_need_save_resume_data; }
 
-        void piece_availability(std::vector<int>& avail) const;
+    bool should_check_file() const;
 
-        void set_piece_priority(int index, int priority);
-        int piece_priority(int index) const;
-        void piece_priorities(std::vector<int>* pieces) const;
+    /** call after transfer checking completed */
+    void file_checked();
+    void start_checking();
 
-        int priority() const;
-        void set_priority(int prio);
+    void set_error(error_code const& ec);
 
-        void set_sequential_download(bool sd);
-        bool is_sequential_download() const { return m_sequential_download; }
+    /** add transfer to check queue in session_impl */
+    void queue_transfer_check();
+    /** remove transfer from check queue insession_impl */
+    void dequeue_transfer_check();
 
-        int queue_position() const { return m_sequence_number; }
+    bool active() const;
+    void activate(bool a);
+    boost::uint16_t last_active() const { return m_last_active; }
 
-        void second_tick(stat& accumulator, int tick_interval_ms, const ptime& now);
+    // --------------------------------------------
+    // SERVER MANAGEMENT
+    // --------------------------------------------
+    /** convert transfer info into announce */
+    shared_file_entry get_announce() const;
 
-        // this is called wheh the transfer has completed
-        // the download. It will post an event, disconnect
-        // all seeds and let the tracker know we're finished.
-        void completed();
+    tcp::endpoint const& get_interface() const { return m_net_interface; }
 
-        // this is called when the transfer has finished. i.e.
-        // all the pieces we have not filtered have been downloaded.
-        // If no pieces are filtered, this is called first and then
-        // completed() is called immediately after it.
-        void finished();
+    std::set<peer_connection*> m_connections;
 
-        stat statistics() const { return m_stat; }
-        void add_stats(const stat& s);
+    void on_files_released(int ret, disk_io_job const& j);
+    void on_files_deleted(int ret, disk_io_job const& j);
+    void on_file_renamed(int ret, disk_io_job const& j);
+    void on_storage_moved(int ret, disk_io_job const& j);
+    void on_transfer_aborted(int ret, disk_io_job const& j);
+    void on_transfer_paused(int ret, disk_io_job const& j);
+    void on_save_resume_data(int ret, disk_io_job const& j);
+    void on_resume_data_checked(int ret, disk_io_job const& j);
+    void on_piece_checked(int ret, disk_io_job const& j);
+    void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
 
-        void ip_filter_updated() { m_policy.ip_filter_updated(); }
+    void handle_disk_write(const disk_io_job& j, peer_connection* c);
+    void handle_disk_error(const disk_io_job& j, peer_connection* c = 0);
 
-        void set_upload_mode(bool b);
-        bool upload_mode() const { return m_upload_mode; }
-
-        bool eager_mode() const { return m_eager_mode; }
-        void set_eager_mode(bool b) { m_eager_mode = b; }
-
-        // --------------------------------------------
-        // PIECE MANAGEMENT
-        // --------------------------------------------
-        void async_verify_piece(int piece_index, const md4_hash& hash,
-                                const boost::function<void(int)>& f);
-
-        // this is called from the peer_connection
-        // each time a piece has failed the hash test
-        void piece_finished(int index, int passed_hash_check);
-
-        // piece_passed is called when a piece passes the hash check
-        // this will tell all peers that we just got his piece
-        // and also let the piece picker know that we have this piece
-        // so it wont pick it for download
-        void piece_passed(int index);
-
-        // piece_failed is called when a piece fails the hash check
-        void piece_failed(int index);
-
-        // this will restore the piece picker state for a piece
-        // by re marking all the requests to blocks in this piece
-        // that are still outstanding in peers' download queues.
-        // this is done when a piece fails
-        void restore_piece_state(int index);
-
-        bool has_picker() const { return m_picker.get() != 0; }
-        piece_picker& picker() { return *m_picker; }
-
-        policy& get_policy() { return m_policy; }
-
-        // returns true if we have downloaded the given piece
-        bool have_piece(int index) const
-        {
-            return has_picker() ? m_picker->have_piece(index) : true;
-        }
-        bitfield have_pieces() const;
-
-        // called when we learn that we have a piece
-        // only once per piece
-        void we_have(int index);
-
-        size_t num_have() const
-        {
-            return has_picker() ? m_picker->num_have() : num_pieces();
-        }
-
-        void peer_has(int index)
-        {
-            if (m_picker.get())
-            {
-                assert(!is_seed());
-                m_picker->inc_refcount(index);
-            }
-            else
-            {
-                assert(is_seed());
-            }
-        }
-
-        size_t num_pieces() const;
-        size_t num_free_blocks() const;
-
-        piece_manager& filesystem() { return *m_storage; }
-        storage_interface* get_storage();
-        void move_storage(const std::string& save_path);
-        bool rename_file(const std::string& name);
-        void delete_files();
-
-        // unless this returns true, new connections must wait
-        // with their initialization.
-        bool ready_for_connections() const { return true; }
-
-        boost::uint32_t getAcepted() const { return m_accepted; }
-        boost::uint32_t getResuested() const { return m_requested; }
-        boost::uint64_t getTransferred() const { return m_transferred; }
-        boost::uint8_t  getPriority() const { return m_priority; }
-
-        /** async generate fast resume data and emit alert */
-        void save_resume_data(int flags);
-		bool need_save_resume_data() const { return m_need_save_resume_data; }
-
-        bool should_check_file() const;
-
-        /** call after transfer checking completed */
-        void file_checked();
-        void start_checking();
-
-        void set_error(error_code const& ec);
-
-        /** add transfer to check queue in session_impl */
-        void queue_transfer_check();
-        /** remove transfer from check queue insession_impl */
-        void dequeue_transfer_check();
-
-        bool active() const;
-        void activate(bool a);
-        boost::uint16_t last_active() const { return m_last_active; }
-
-        // --------------------------------------------
-        // SERVER MANAGEMENT
-        // --------------------------------------------
-        /** convert transfer info into announce */
-        shared_file_entry get_announce() const;
-
-        tcp::endpoint const& get_interface() const { return m_net_interface; }
-
-        std::set<peer_connection*> m_connections;
-
-        void on_files_released(int ret, disk_io_job const& j);
-        void on_files_deleted(int ret, disk_io_job const& j);
-        void on_file_renamed(int ret, disk_io_job const& j);
-        void on_storage_moved(int ret, disk_io_job const& j);
-        void on_transfer_aborted(int ret, disk_io_job const& j);
-        void on_transfer_paused(int ret, disk_io_job const& j);
-        void on_save_resume_data(int ret, disk_io_job const& j);
-        void on_resume_data_checked(int ret, disk_io_job const& j);
-        void on_piece_checked(int ret, disk_io_job const& j);
-        void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
-
-        void handle_disk_write(const disk_io_job& j, peer_connection* c);
-        void handle_disk_error(const disk_io_job& j, peer_connection* c = 0);
-
-        // --------------------------------------------
-        // BANDWIDTH MANAGEMENT
-        // --------------------------------------------
-        bandwidth_channel m_bandwidth_channel[2];
-        //int bandwidth_throttle(int channel) const;
+    // --------------------------------------------
+    // BANDWIDTH MANAGEMENT
+    // --------------------------------------------
+    bandwidth_channel m_bandwidth_channel[2];
+// int bandwidth_throttle(int channel) const;
 
 #ifndef LIBED2K_DISABLE_DHT
-        bool should_announce_dht() const;
-        void dht_announce();
-        //static void on_dht_announce_response_disp(boost::weak_ptr<transfer> t
-        //        , kad_id const& id);
-        void on_dht_announce_response(std::vector<tcp::endpoint> const& peers);
+    bool should_announce_dht() const;
+    void dht_announce();
+    // static void on_dht_announce_response_disp(boost::weak_ptr<transfer> t
+    //        , kad_id const& id);
+    void on_dht_announce_response(std::vector<tcp::endpoint> const& peers);
 #endif
 
-    private:
-        // will initialize the storage and the piece-picker
-        void init();
-        void bytes_done(transfer_status& st) const;
-        void add_failed_bytes(int b);
-        int block_bytes_wanted(const piece_block& p) const { return BLOCK_SIZE; }
+   private:
+    // will initialize the storage and the piece-picker
+    void init();
+    void bytes_done(transfer_status& st) const;
+    void add_failed_bytes(int b);
+    int block_bytes_wanted(const piece_block& p) const { return BLOCK_SIZE; }
 
-        void write_resume_data(entry& rd) const;
-        void read_resume_data(lazy_entry const& rd);
+    void write_resume_data(entry& rd) const;
+    void read_resume_data(lazy_entry const& rd);
 
-        // this is the upload and download statistics for the whole transfer.
-        // it's updated from all its peers once every second.
-        stat m_stat;
+    // this is the upload and download statistics for the whole transfer.
+    // it's updated from all its peers once every second.
+    stat m_stat;
 
-        // a back reference to the session
-        // this transfer belongs to.
-        aux::session_impl& m_ses;
-        boost::scoped_ptr<piece_picker> m_picker;
+    // a back reference to the session
+    // this transfer belongs to.
+    aux::session_impl& m_ses;
+    boost::scoped_ptr<piece_picker> m_picker;
 
-        bool m_announced;   //! transfer announced on server
-        // is set to true when the transfer has been aborted.
-        bool m_abort;
+    bool m_announced;  //! transfer announced on server
+    // is set to true when the transfer has been aborted.
+    bool m_abort;
 
-        bool m_paused;
-        bool m_sequential_download;
+    bool m_paused;
+    bool m_sequential_download;
 
-        int m_sequence_number;
+    int m_sequence_number;
 
-        // the network interface all outgoing connections
-        // are opened through
-        tcp::endpoint m_net_interface;
-        std::string   m_save_path;     //!< file save path
-        // the number of seconds we've been in upload mode
-        unsigned int m_upload_mode_time;
+    // the network interface all outgoing connections
+    // are opened through
+    tcp::endpoint m_net_interface;
+    std::string m_save_path;  //!< file save path
+    // the number of seconds we've been in upload mode
+    unsigned int m_upload_mode_time;
 
-        // determines the storage state for this transfer.
-        storage_mode_t m_storage_mode;
+    // determines the storage state for this transfer.
+    storage_mode_t m_storage_mode;
 
-        // the state of this transfer (queued, checking, downloading, etc.)
-        transfer_status::state_t m_state;
+    // the state of this transfer (queued, checking, downloading, etc.)
+    transfer_status::state_t m_state;
 
-        // this means we haven't verified the file content
-        // of the files we're seeding. the m_verified bitfield
-        // indicates which pieces have been verified and which
-        // haven't
-        bool m_seed_mode;
+    // this means we haven't verified the file content
+    // of the files we're seeding. the m_verified bitfield
+    // indicates which pieces have been verified and which
+    // haven't
+    bool m_seed_mode;
 
-        // set to true when this transfer may not download anything
-        bool m_upload_mode;
+    // set to true when this transfer may not download anything
+    bool m_upload_mode;
 
-        // in eager mode all timeout requests will be aborted
-        bool m_eager_mode;
+    // in eager mode all timeout requests will be aborted
+    bool m_eager_mode;
 
-        // if this is true, libed2k may pause and resume
-        // this transfer depending on queuing rules. Transfers
-        // started with auto_managed flag set may be added in
-        // a paused state in case there are no available
-        // slots.
-        bool m_auto_managed;
+    // if this is true, libed2k may pause and resume
+    // this transfer depending on queuing rules. Transfers
+    // started with auto_managed flag set may be added in
+    // a paused state in case there are no available
+    // slots.
+    bool m_auto_managed;
 
-        int m_complete;
-        int m_incomplete;
+    int m_complete;
+    int m_incomplete;
 
-        policy m_policy;
+    policy m_policy;
 
-        // used for compatibility with piece_manager,
-        // may store invalid data
-        // should store valid file path
-        boost::intrusive_ptr<transfer_info> m_info;
+    // used for compatibility with piece_manager,
+    // may store invalid data
+    // should store valid file path
+    boost::intrusive_ptr<transfer_info> m_info;
 
-        boost::uint32_t m_accepted;
-        boost::uint32_t m_requested;
-        boost::uint64_t m_transferred;
-        boost::uint8_t  m_priority;
+    boost::uint32_t m_accepted;
+    boost::uint32_t m_requested;
+    boost::uint64_t m_transferred;
+    boost::uint8_t m_priority;
 
-        // all time totals of uploaded and downloaded payload
-        // stored in resume data
-        size_type m_total_uploaded;
-        size_type m_total_downloaded;
-        bool m_queued_for_checking;
+    // all time totals of uploaded and downloaded payload
+    // stored in resume data
+    size_type m_total_uploaded;
+    size_type m_total_downloaded;
+    bool m_queued_for_checking;
 
-        // progress parts per million (the number of millionths of completeness)
-        int m_progress_ppm;
+    // progress parts per million (the number of millionths of completeness)
+    int m_progress_ppm;
 
-        // the number of bytes that has been
-        // downloaded that failed the hash-test
-        boost::uint32_t m_total_failed_bytes;
-        boost::uint32_t m_total_redundant_bytes;
+    // the number of bytes that has been
+    // downloaded that failed the hash-test
+    boost::uint32_t m_total_failed_bytes;
+    boost::uint32_t m_total_redundant_bytes;
 
-        // the piece_manager keeps the transfer object
-        // alive by holding a shared_ptr to it and
-        // the transfer keeps the piece manager alive
-        // with this intrusive_ptr. This cycle is
-        // broken when transfer::abort() is called
-        // Then the transfer releases the piece_manager
-        // and when the piece_manager is complete with all
-        // outstanding disk io jobs (that keeps
-        // the piece_manager alive) it will destruct
-        // and release the transfer file. The reason for
-        // this is that the transfer_info is used by
-        // the piece_manager, and stored in the
-        // torrent, so the torrent cannot destruct
-        // before the piece_manager.
-        boost::intrusive_ptr<piece_manager> m_owning_storage;
+    // the piece_manager keeps the transfer object
+    // alive by holding a shared_ptr to it and
+    // the transfer keeps the piece manager alive
+    // with this intrusive_ptr. This cycle is
+    // broken when transfer::abort() is called
+    // Then the transfer releases the piece_manager
+    // and when the piece_manager is complete with all
+    // outstanding disk io jobs (that keeps
+    // the piece_manager alive) it will destruct
+    // and release the transfer file. The reason for
+    // this is that the transfer_info is used by
+    // the piece_manager, and stored in the
+    // torrent, so the torrent cannot destruct
+    // before the piece_manager.
+    boost::intrusive_ptr<piece_manager> m_owning_storage;
 
-        // this is a weak (non owninig) pointer to
-        // the piece_manager. This is used after the torrent
-        // has been aborted, and it can no longer own
-        // the object.
-        piece_manager* m_storage;
+    // this is a weak (non owninig) pointer to
+    // the piece_manager. This is used after the torrent
+    // has been aborted, and it can no longer own
+    // the object.
+    piece_manager* m_storage;
 
-        duration_timer m_minute_timer;
+    duration_timer m_minute_timer;
 
-        /** previously saved resume data */
-        std::vector<char>  m_resume_data;
-        lazy_entry m_resume_entry;
+    /** previously saved resume data */
+    std::vector<char> m_resume_data;
+    lazy_entry m_resume_entry;
 
-        // set to false when saving resume data. Set to true
-        // whenever something is downloaded
-        bool m_need_save_resume_data;
+    // set to false when saving resume data. Set to true
+    // whenever something is downloaded
+    bool m_need_save_resume_data;
 
-        /** current error on this transfer */
-        error_code m_error;
+    /** current error on this transfer */
+    error_code m_error;
 
-        // the number of seconds since the last active state
-        boost::uint16_t m_last_active;
-    };
+    // the number of seconds since the last active state
+    boost::uint16_t m_last_active;
+};
 
-    extern shared_file_entry transfer2sfe(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran);
+extern shared_file_entry transfer2sfe(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran);
 }
 
 #endif

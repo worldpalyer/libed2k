@@ -36,8 +36,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/connection_queue.hpp"
 #include "libed2k/socket_io.hpp"
 #include "libed2k/error.hpp"
-#include "libed2k/string_util.hpp" // for allocate_string_copy
-#include "libed2k/broadcast_socket.hpp" // for is_any
+#include "libed2k/string_util.hpp"       // for allocate_string_copy
+#include "libed2k/broadcast_socket.hpp"  // for is_any
 #include <stdlib.h>
 #include <boost/bind.hpp>
 #include <boost/array.hpp>
@@ -53,37 +53,38 @@ POSSIBILITY OF SUCH DAMAGE.
 
 using namespace libed2k;
 
-udp_socket::udp_socket(asio::io_service& ios
-    , udp_socket::callback_t const& c
-    , udp_socket::callback2_t const& c2
-    , connection_queue& cc)
-    : m_callback(c)
-    , m_callback2(c2)
-    , m_ipv4_sock(ios)
-    , m_v4_buf_size(0)
-    , m_v4_buf(0)
-    , m_reallocate_buffer4(false)
+udp_socket::udp_socket(asio::io_service& ios, udp_socket::callback_t const& c, udp_socket::callback2_t const& c2,
+                       connection_queue& cc)
+    : m_callback(c),
+      m_callback2(c2),
+      m_ipv4_sock(ios),
+      m_v4_buf_size(0),
+      m_v4_buf(0),
+      m_reallocate_buffer4(false)
 #if LIBED2K_USE_IPV6
-    , m_ipv6_sock(ios)
-    , m_v6_buf_size(0)
-    , m_v6_buf(0)
-    , m_reallocate_buffer6(false)
+      ,
+      m_ipv6_sock(ios),
+      m_v6_buf_size(0),
+      m_v6_buf(0),
+      m_reallocate_buffer6(false)
 #endif
-    , m_bind_port(0)
-    , m_v4_outstanding(0)
+      ,
+      m_bind_port(0),
+      m_v4_outstanding(0)
 #if LIBED2K_USE_IPV6
-    , m_v6_outstanding(0)
+      ,
+      m_v6_outstanding(0)
 #endif
-    , m_socks5_sock(ios)
-    , m_connection_ticket(-1)
-    , m_cc(cc)
-    , m_resolver(ios)
-    , m_queue_packets(false)
-    , m_tunnel_packets(false)
-    , m_force_proxy(false)
-    , m_abort(false)
-    , m_outstanding_ops(0)
-{
+      ,
+      m_socks5_sock(ios),
+      m_connection_ticket(-1),
+      m_cc(cc),
+      m_resolver(ios),
+      m_queue_packets(false),
+      m_tunnel_packets(false),
+      m_force_proxy(false),
+      m_abort(false),
+      m_outstanding_ops(0) {
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
     m_magic = 0x1337;
     m_started = false;
@@ -106,8 +107,7 @@ udp_socket::udp_socket(asio::io_service& ios
 #endif
 }
 
-udp_socket::~udp_socket()
-{
+udp_socket::~udp_socket() {
     free(m_v4_buf);
 #if LIBED2K_USE_IPV6
     free(m_v6_buf);
@@ -123,20 +123,19 @@ udp_socket::~udp_socket()
 }
 
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
-    #define CHECK_MAGIC check_magic_ cm_(m_magic)
-    struct check_magic_
-    {
-        check_magic_(int& m_): m(m_) { LIBED2K_ASSERT(m == 0x1337); }
-        ~check_magic_() { LIBED2K_ASSERT(m == 0x1337); }
-        int& m;
-    };
+#define CHECK_MAGIC check_magic_ cm_(m_magic)
+struct check_magic_ {
+    check_magic_(int& m_) : m(m_) { LIBED2K_ASSERT(m == 0x1337); }
+    ~check_magic_() { LIBED2K_ASSERT(m == 0x1337); }
+    int& m;
+};
 #else
-    #define CHECK_MAGIC do {} while (false)
+#define CHECK_MAGIC \
+    do {            \
+    } while (false)
 #endif
 
-void udp_socket::send_hostname(char const* hostname, int port
-    , char const* p, int len, error_code& ec)
-{
+void udp_socket::send_hostname(char const* hostname, int port, char const* p, int len, error_code& ec) {
     CHECK_MAGIC;
 
     LIBED2K_ASSERT(is_open());
@@ -145,16 +144,14 @@ void udp_socket::send_hostname(char const* hostname, int port
     // if the sockets are closed, the udp_socket is closing too
     if (!is_open()) return;
 
-    if (m_tunnel_packets)
-    {
+    if (m_tunnel_packets) {
         // send udp packets through SOCKS5 server
         wrap(hostname, port, p, len, ec);
         return;
     }
 
     // this function is only supported when we're using a proxy
-    if (!m_queue_packets)
-    {
+    if (!m_queue_packets) {
         address target = address::from_string(hostname, ec);
         if (!ec) send(udp::endpoint(target, port), p, len, ec, 0);
         return;
@@ -170,14 +167,12 @@ void udp_socket::send_hostname(char const* hostname, int port
     qp.flags = 0;
 }
 
-bool udp_socket::maybe_clear_callback()
-{
+bool udp_socket::maybe_clear_callback() {
     if (m_outstanding_ops + m_v4_outstanding
 #if LIBED2K_USE_IPV6
-        + m_v6_outstanding
+            + m_v6_outstanding
 #endif
-        == 0)
-    {
+        == 0) {
         // "this" may be destructed in the callback
         m_callback.clear();
         return true;
@@ -185,8 +180,7 @@ bool udp_socket::maybe_clear_callback()
     return false;
 }
 
-void udp_socket::send(udp::endpoint const& ep, char const* p, int len, error_code& ec, int flags)
-{
+void udp_socket::send(udp::endpoint const& ep, char const* p, int len, error_code& ec, int flags) {
     CHECK_MAGIC;
 
     LIBED2K_ASSERT(is_open());
@@ -195,17 +189,14 @@ void udp_socket::send(udp::endpoint const& ep, char const* p, int len, error_cod
     // if the sockets are closed, the udp_socket is closing too
     if (!is_open()) return;
 
-    if (!(flags & peer_connection) || m_proxy_settings.proxy_peer_connections)
-    {
-        if (m_tunnel_packets)
-        {
+    if (!(flags & peer_connection) || m_proxy_settings.proxy_peer_connections) {
+        if (m_tunnel_packets) {
             // send udp packets through SOCKS5 server
             wrap(ep, p, len, ec);
             return;
         }
 
-        if (m_queue_packets)
-        {
+        if (m_queue_packets) {
             if (m_queue.size() > 1000) return;
 
             m_queue.push_back(queued_packet());
@@ -230,31 +221,31 @@ void udp_socket::send(udp::endpoint const& ep, char const* p, int len, error_cod
 #endif
 }
 
-void udp_socket::maybe_realloc_buffers(int which)
-{
+void udp_socket::maybe_realloc_buffers(int which) {
     LIBED2K_ASSERT(is_single_thread());
     bool no_mem = false;
-    if (m_reallocate_buffer4 && (which & 1) && m_v4_outstanding == 0)
-    {
+    if (m_reallocate_buffer4 && (which & 1) && m_v4_outstanding == 0) {
         LIBED2K_ASSERT(m_v4_outstanding == 0);
         void* tmp = realloc(m_v4_buf, m_v4_buf_size);
-        if (tmp != 0) m_v4_buf = (char*)tmp;
-        else no_mem = true;
+        if (tmp != 0)
+            m_v4_buf = (char*)tmp;
+        else
+            no_mem = true;
         m_reallocate_buffer4 = false;
     }
 #if LIBED2K_USE_IPV6
-    if (m_reallocate_buffer6 && (which & 2) && m_v6_outstanding == 0)
-    {
+    if (m_reallocate_buffer6 && (which & 2) && m_v6_outstanding == 0) {
         LIBED2K_ASSERT(m_v6_outstanding == 0);
         void* tmp = realloc(m_v6_buf, m_v6_buf_size);
-        if (tmp != 0) m_v6_buf = (char*)tmp;
-        else no_mem = true;
+        if (tmp != 0)
+            m_v6_buf = (char*)tmp;
+        else
+            no_mem = true;
         m_reallocate_buffer6 = false;
     }
 #endif
 
-    if (no_mem)
-    {
+    if (no_mem) {
         free(m_v4_buf);
         m_v4_buf = 0;
         m_v4_buf_size = 0;
@@ -268,8 +259,7 @@ void udp_socket::maybe_realloc_buffers(int which)
     }
 }
 
-void udp_socket::on_read(udp::socket* s, error_code const& e, std::size_t bytes_transferred)
-{
+void udp_socket::on_read(udp::socket* s, error_code const& e, std::size_t bytes_transferred) {
 #if defined LIBED2K_ASIO_DEBUGGING
     complete_async("udp_socket::on_read");
 #endif
@@ -278,20 +268,17 @@ void udp_socket::on_read(udp::socket* s, error_code const& e, std::size_t bytes_
     LIBED2K_ASSERT(is_single_thread());
 
 #if LIBED2K_USE_IPV6
-    if (s == &m_ipv6_sock)
-    {
+    if (s == &m_ipv6_sock) {
         LIBED2K_ASSERT(m_v6_outstanding > 0);
         --m_v6_outstanding;
-    }
-    else
+    } else
 #endif
     {
         LIBED2K_ASSERT(m_v4_outstanding > 0);
         --m_v4_outstanding;
     }
 
-    if (m_abort)
-    {
+    if (m_abort) {
         maybe_clear_callback();
         return;
     }
@@ -299,40 +286,33 @@ void udp_socket::on_read(udp::socket* s, error_code const& e, std::size_t bytes_
     CHECK_MAGIC;
     if (!m_callback) return;
 
-    if (e)
-    {
+    if (e) {
         LIBED2K_TRY {
-
 #if LIBED2K_USE_IPV6
             if (s == &m_ipv6_sock)
                 m_callback(e, m_v6_ep, 0, 0);
             else
 #endif
                 m_callback(e, m_v4_ep, 0, 0);
-
-        } LIBED2K_CATCH (std::exception&) {}
+        }
+        LIBED2K_CATCH(std::exception&) {}
 
         // don't stop listening on recoverable errors
-        if (e != asio::error::host_unreachable
-            && e != asio::error::fault
-            && e != asio::error::connection_reset
-            && e != asio::error::connection_refused
-            && e != asio::error::connection_aborted
-            && e != asio::error::operation_aborted
-            && e != asio::error::network_reset
-            && e != asio::error::network_unreachable
+        if (e != asio::error::host_unreachable && e != asio::error::fault && e != asio::error::connection_reset &&
+            e != asio::error::connection_refused && e != asio::error::connection_aborted &&
+            e != asio::error::operation_aborted && e != asio::error::network_reset &&
+            e != asio::error::network_unreachable
 #ifdef WIN32
             // ERROR_MORE_DATA means the same thing as EMSGSIZE
-            && e != error_code(ERROR_MORE_DATA, get_system_category())
-            && e != error_code(ERROR_HOST_UNREACHABLE, get_system_category())
-            && e != error_code(ERROR_PORT_UNREACHABLE, get_system_category())
-            && e != error_code(ERROR_RETRY, get_system_category())
-            && e != error_code(ERROR_NETWORK_UNREACHABLE, get_system_category())
-            && e != error_code(ERROR_CONNECTION_REFUSED, get_system_category())
-            && e != error_code(ERROR_CONNECTION_ABORTED, get_system_category())
+            && e != error_code(ERROR_MORE_DATA, get_system_category()) &&
+            e != error_code(ERROR_HOST_UNREACHABLE, get_system_category()) &&
+            e != error_code(ERROR_PORT_UNREACHABLE, get_system_category()) &&
+            e != error_code(ERROR_RETRY, get_system_category()) &&
+            e != error_code(ERROR_NETWORK_UNREACHABLE, get_system_category()) &&
+            e != error_code(ERROR_CONNECTION_REFUSED, get_system_category()) &&
+            e != error_code(ERROR_CONNECTION_ABORTED, get_system_category())
 #endif
-            && e != asio::error::message_size)
-        {
+            && e != asio::error::message_size) {
             maybe_clear_callback();
             return;
         }
@@ -343,23 +323,20 @@ void udp_socket::on_read(udp::socket* s, error_code const& e, std::size_t bytes_
         add_outstanding_async("udp_socket::on_read");
 #endif
 #if LIBED2K_USE_IPV6
-        if (s == &m_ipv6_sock && num_outstanding() == 0)
-        {
+        if (s == &m_ipv6_sock && num_outstanding() == 0) {
             maybe_realloc_buffers(2);
             if (m_abort) return;
             ++m_v6_outstanding;
-            s->async_receive_from(asio::buffer(m_v6_buf, m_v6_buf_size)
-                , m_v6_ep, boost::bind(&udp_socket::on_read, this, s, _1, _2));
-        }
-        else
+            s->async_receive_from(asio::buffer(m_v6_buf, m_v6_buf_size), m_v6_ep,
+                                  boost::bind(&udp_socket::on_read, this, s, _1, _2));
+        } else
 #endif
-        if (m_v4_outstanding == 0)
-        {
+            if (m_v4_outstanding == 0) {
             maybe_realloc_buffers(1);
             if (m_abort) return;
             ++m_v4_outstanding;
-            s->async_receive_from(asio::buffer(m_v4_buf, m_v4_buf_size)
-                , m_v4_ep, boost::bind(&udp_socket::on_read, this, s, _1, _2));
+            s->async_receive_from(asio::buffer(m_v4_buf, m_v4_buf_size), m_v4_ep,
+                                  boost::bind(&udp_socket::on_read, this, s, _1, _2));
         }
 
 #ifdef LIBED2K_DEBUG
@@ -369,27 +346,20 @@ void udp_socket::on_read(udp::socket* s, error_code const& e, std::size_t bytes_
     }
 
 #if LIBED2K_USE_IPV6
-    if (s == &m_ipv6_sock)
-    {
+    if (s == &m_ipv6_sock) {
         LIBED2K_TRY {
-
-            if (m_tunnel_packets)
-            {
+            if (m_tunnel_packets) {
                 // if the source IP doesn't match the proxy's, ignore the packet
-                if (m_v6_ep == m_udp_proxy_addr)
-                    unwrap(e, m_v6_buf, bytes_transferred);
-            }
-            else
-            {
+                if (m_v6_ep == m_udp_proxy_addr) unwrap(e, m_v6_buf, bytes_transferred);
+            } else {
                 m_callback(e, m_v6_ep, m_v6_buf, bytes_transferred);
             }
-
-        } LIBED2K_CATCH (std::exception&) {}
+        }
+        LIBED2K_CATCH(std::exception&) {}
 
         if (m_abort) return;
 
-        if (num_outstanding() == 0)
-        {
+        if (num_outstanding() == 0) {
             maybe_realloc_buffers(2);
             if (m_abort) return;
 
@@ -397,33 +367,26 @@ void udp_socket::on_read(udp::socket* s, error_code const& e, std::size_t bytes_
             add_outstanding_async("udp_socket::on_read");
 #endif
             ++m_v6_outstanding;
-            s->async_receive_from(asio::buffer(m_v6_buf, m_v6_buf_size)
-                , m_v6_ep, boost::bind(&udp_socket::on_read, this, s, _1, _2));
+            s->async_receive_from(asio::buffer(m_v6_buf, m_v6_buf_size), m_v6_ep,
+                                  boost::bind(&udp_socket::on_read, this, s, _1, _2));
         }
-    }
-    else
-#endif // LIBED2K_USE_IPV6
+    } else
+#endif  // LIBED2K_USE_IPV6
     {
 
         LIBED2K_TRY {
-
-            if (m_tunnel_packets)
-            {
+            if (m_tunnel_packets) {
                 // if the source IP doesn't match the proxy's, ignore the packet
-                if (m_v4_ep == m_udp_proxy_addr)
-                    unwrap(e, m_v4_buf, bytes_transferred);
-            }
-            else
-            {
+                if (m_v4_ep == m_udp_proxy_addr) unwrap(e, m_v4_buf, bytes_transferred);
+            } else {
                 m_callback(e, m_v4_ep, m_v4_buf, bytes_transferred);
             }
-
-        } LIBED2K_CATCH (std::exception&) {}
+        }
+        LIBED2K_CATCH(std::exception&) {}
 
         if (m_abort) return;
 
-        if (m_v4_outstanding == 0)
-        {
+        if (m_v4_outstanding == 0) {
             maybe_realloc_buffers(1);
             if (m_abort) return;
 
@@ -431,8 +394,8 @@ void udp_socket::on_read(udp::socket* s, error_code const& e, std::size_t bytes_
             add_outstanding_async("udp_socket::on_read");
 #endif
             ++m_v4_outstanding;
-            s->async_receive_from(asio::buffer(m_v4_buf, m_v4_buf_size)
-                , m_v4_ep, boost::bind(&udp_socket::on_read, this, s, _1, _2));
+            s->async_receive_from(asio::buffer(m_v4_buf, m_v4_buf_size), m_v4_ep,
+                                  boost::bind(&udp_socket::on_read, this, s, _1, _2));
         }
     }
 
@@ -441,17 +404,16 @@ void udp_socket::on_read(udp::socket* s, error_code const& e, std::size_t bytes_
 #endif
 }
 
-void udp_socket::wrap(udp::endpoint const& ep, char const* p, int len, error_code& ec)
-{
+void udp_socket::wrap(udp::endpoint const& ep, char const* p, int len, error_code& ec) {
     CHECK_MAGIC;
     using namespace libed2k::detail;
 
     char header[25];
     char* h = header;
 
-    write_uint16(0, h); // reserved
-    write_uint8(0, h); // fragment
-    write_uint8(ep.address().is_v4()?1:4, h); // atyp
+    write_uint16(0, h);                            // reserved
+    write_uint8(0, h);                             // fragment
+    write_uint8(ep.address().is_v4() ? 1 : 4, h);  // atyp
     write_endpoint(ep, h);
 
     boost::array<asio::const_buffer, 2> iovec;
@@ -468,19 +430,18 @@ void udp_socket::wrap(udp::endpoint const& ep, char const* p, int len, error_cod
 #endif
 }
 
-void udp_socket::wrap(char const* hostname, int port, char const* p, int len, error_code& ec)
-{
+void udp_socket::wrap(char const* hostname, int port, char const* p, int len, error_code& ec) {
     CHECK_MAGIC;
     using namespace libed2k::detail;
 
     char header[270];
     char* h = header;
 
-    write_uint16(0, h); // reserved
-    write_uint8(0, h); // fragment
-    write_uint8(3, h); // atyp
+    write_uint16(0, h);  // reserved
+    write_uint8(0, h);   // fragment
+    write_uint8(3, h);   // atyp
     int hostlen = (std::min)(strlen(hostname), size_t(255));
-    write_uint8(hostlen, h); // hostname len
+    write_uint8(hostlen, h);  // hostname len
     memcpy(h, hostname, hostlen);
     h += hostlen;
     write_uint16(port, h);
@@ -500,8 +461,7 @@ void udp_socket::wrap(char const* hostname, int port, char const* p, int len, er
 }
 
 // unwrap the UDP packet from the SOCKS5 header
-void udp_socket::unwrap(error_code const& e, char const* buf, int size)
-{
+void udp_socket::unwrap(error_code const& e, char const* buf, int size) {
     CHECK_MAGIC;
     using namespace libed2k::detail;
 
@@ -509,7 +469,7 @@ void udp_socket::unwrap(error_code const& e, char const* buf, int size)
     if (size <= 10) return;
 
     char const* p = buf;
-    p += 2; // reserved
+    p += 2;  // reserved
     int frag = read_uint8(p);
     // fragmentation is not supported
     if (frag != 0) return;
@@ -517,20 +477,17 @@ void udp_socket::unwrap(error_code const& e, char const* buf, int size)
     udp::endpoint sender;
 
     int atyp = read_uint8(p);
-    if (atyp == 1)
-    {
+    if (atyp == 1) {
         // IPv4
         sender = read_v4_endpoint<udp::endpoint>(p);
     }
 #if LIBED2K_USE_IPV6
-    else if (atyp == 4)
-    {
+    else if (atyp == 4) {
         // IPv6
         sender = read_v6_endpoint<udp::endpoint>(p);
     }
 #endif
-    else
-    {
+    else {
         int len = read_uint8(p);
         if (len > (buf + size) - p) return;
         std::string hostname(p, p + len);
@@ -546,8 +503,7 @@ void udp_socket::unwrap(error_code const& e, char const* buf, int size)
 #error BOOST_ASIO_ENABLE_CANCELIO needs to be defined when building libed2k to enable cancel() in asio on windows
 #endif
 
-void udp_socket::close()
-{
+void udp_socket::close() {
     LIBED2K_ASSERT(is_single_thread());
     LIBED2K_ASSERT(m_magic == 0x1337);
 
@@ -556,18 +512,15 @@ void udp_socket::close()
     // utp connections or NAT-PMP. We need to cancel the
     // outstanding operations
     m_ipv4_sock.cancel(ec);
-    if (ec == error::operation_not_supported)
-        m_ipv4_sock.close(ec);
+    if (ec == error::operation_not_supported) m_ipv4_sock.close(ec);
     LIBED2K_ASSERT_VAL(!ec || ec == error::bad_descriptor, ec);
 #if LIBED2K_USE_IPV6
     m_ipv6_sock.cancel(ec);
-    if (ec == error::operation_not_supported)
-        m_ipv6_sock.close(ec);
+    if (ec == error::operation_not_supported) m_ipv6_sock.close(ec);
     LIBED2K_ASSERT_VAL(!ec || ec == error::bad_descriptor, ec);
 #endif
     m_socks5_sock.cancel(ec);
-    if (ec == error::operation_not_supported)
-        m_socks5_sock.close(ec);
+    if (ec == error::operation_not_supported) m_socks5_sock.close(ec);
     LIBED2K_ASSERT_VAL(!ec || ec == error::bad_descriptor, ec);
     m_resolver.cancel();
     m_abort = true;
@@ -576,28 +529,24 @@ void udp_socket::close()
     m_outstanding_when_aborted = num_outstanding();
 #endif
 
-    if (m_connection_ticket >= 0)
-    {
+    if (m_connection_ticket >= 0) {
         m_cc.done(m_connection_ticket);
         m_connection_ticket = -1;
 
-        // we just called done, which means on_timeout
-        // won't be called. Decrement the outstanding
-        // ops counter for that
+// we just called done, which means on_timeout
+// won't be called. Decrement the outstanding
+// ops counter for that
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
         LIBED2K_ASSERT(m_outstanding_timeout > 0);
         --m_outstanding_timeout;
 #endif
         LIBED2K_ASSERT(m_outstanding_ops > 0);
         --m_outstanding_ops;
-        LIBED2K_ASSERT(m_outstanding_ops == m_outstanding_connect
-            + m_outstanding_timeout
-            + m_outstanding_resolve
-            + m_outstanding_connect_queue
-            + m_outstanding_socks);
+        LIBED2K_ASSERT(m_outstanding_ops ==
+                       m_outstanding_connect + m_outstanding_timeout + m_outstanding_resolve +
+                           m_outstanding_connect_queue + m_outstanding_socks);
 
-        if (m_abort)
-        {
+        if (m_abort) {
             maybe_clear_callback();
             return;
         }
@@ -606,11 +555,9 @@ void udp_socket::close()
     maybe_clear_callback();
 }
 
-void udp_socket::set_buf_size(int s)
-{
+void udp_socket::set_buf_size(int s) {
     LIBED2K_ASSERT(is_single_thread());
-    if (s > m_v4_buf_size)
-    {
+    if (s > m_v4_buf_size) {
         m_v4_buf_size = s;
         m_reallocate_buffer4 = true;
 #if LIBED2K_USE_IPV6
@@ -620,8 +567,7 @@ void udp_socket::set_buf_size(int s)
     }
 }
 
-void udp_socket::bind(udp::endpoint const& ep, error_code& ec)
-{
+void udp_socket::bind(udp::endpoint const& ep, error_code& ec) {
     CHECK_MAGIC;
     LIBED2K_ASSERT(is_single_thread());
 
@@ -633,29 +579,25 @@ void udp_socket::bind(udp::endpoint const& ep, error_code& ec)
     if (m_ipv6_sock.is_open()) m_ipv6_sock.close(ec);
 #endif
 
-    if (ep.address().is_v4())
-    {
+    if (ep.address().is_v4()) {
         m_ipv4_sock.open(udp::v4(), ec);
         if (ec) return;
         m_ipv4_sock.bind(ep, ec);
         if (ec) return;
-        if (m_v4_outstanding == 0)
-        {
+        if (m_v4_outstanding == 0) {
             maybe_realloc_buffers(1);
             if (m_abort) return;
 #if defined LIBED2K_ASIO_DEBUGGING
             add_outstanding_async("udp_socket::on_read");
 #endif
             ++m_v4_outstanding;
-            m_ipv4_sock.async_receive_from(asio::buffer(m_v4_buf, m_v4_buf_size)
-                , m_v4_ep, boost::bind(&udp_socket::on_read, this, &m_ipv4_sock
-                , _1, _2));
+            m_ipv4_sock.async_receive_from(asio::buffer(m_v4_buf, m_v4_buf_size), m_v4_ep,
+                                           boost::bind(&udp_socket::on_read, this, &m_ipv4_sock, _1, _2));
         }
     }
 
 #if LIBED2K_USE_IPV6
-    if (supports_ipv6() && (ep.address().is_v6() || is_any(ep.address())))
-    {
+    if (supports_ipv6() && (ep.address().is_v6() || is_any(ep.address()))) {
         udp::endpoint ep6 = ep;
         if (is_any(ep.address())) ep6.address(address_v6::any());
         m_ipv6_sock.open(udp::v6(), ec);
@@ -666,17 +608,15 @@ void udp_socket::bind(udp::endpoint const& ep, error_code& ec)
 #endif
         m_ipv6_sock.bind(ep6, ec);
         if (ec) return;
-        if (m_v6_outstanding == 0)
-        {
+        if (m_v6_outstanding == 0) {
             maybe_realloc_buffers(2);
             if (m_abort) return;
 #if defined LIBED2K_ASIO_DEBUGGING
             add_outstanding_async("udp_socket::on_read");
 #endif
             ++m_v6_outstanding;
-            m_ipv6_sock.async_receive_from(asio::buffer(m_v6_buf, m_v6_buf_size)
-                , m_v6_ep, boost::bind(&udp_socket::on_read, this, &m_ipv6_sock
-                , _1, _2));
+            m_ipv6_sock.async_receive_from(asio::buffer(m_v6_buf, m_v6_buf_size), m_v6_ep,
+                                           boost::bind(&udp_socket::on_read, this, &m_ipv6_sock, _1, _2));
         }
     }
 #endif
@@ -686,8 +626,7 @@ void udp_socket::bind(udp::endpoint const& ep, error_code& ec)
     m_bind_port = ep.port();
 }
 
-void udp_socket::bind(int port)
-{
+void udp_socket::bind(int port) {
     CHECK_MAGIC;
     LIBED2K_ASSERT(is_single_thread());
 
@@ -705,24 +644,20 @@ void udp_socket::bind(int port)
     if (m_abort) return;
 
     m_ipv4_sock.open(udp::v4(), ec);
-    if (!ec)
-    {
+    if (!ec) {
 #if defined LIBED2K_ASIO_DEBUGGING
         add_outstanding_async("udp_socket::on_read");
 #endif
         m_ipv4_sock.bind(udp::endpoint(address_v4::any(), port), ec);
-        if (m_v4_outstanding == 0)
-        {
+        if (m_v4_outstanding == 0) {
             ++m_v4_outstanding;
-            m_ipv4_sock.async_receive_from(asio::buffer(m_v4_buf, m_v4_buf_size)
-                , m_v4_ep, boost::bind(&udp_socket::on_read, this, &m_ipv4_sock
-                , _1, _2));
+            m_ipv4_sock.async_receive_from(asio::buffer(m_v4_buf, m_v4_buf_size), m_v4_ep,
+                                           boost::bind(&udp_socket::on_read, this, &m_ipv4_sock, _1, _2));
         }
     }
 #if LIBED2K_USE_IPV6
     m_ipv6_sock.open(udp::v6(), ec);
-    if (!ec)
-    {
+    if (!ec) {
 #if defined LIBED2K_ASIO_DEBUGGING
         add_outstanding_async("udp_socket::on_read");
 #endif
@@ -732,24 +667,21 @@ void udp_socket::bind(int port)
 #endif
         m_ipv6_sock.bind(udp::endpoint(address_v6::any(), port), ec);
 
-        if (m_v6_outstanding == 0)
-        {
+        if (m_v6_outstanding == 0) {
             ++m_v6_outstanding;
-            m_ipv6_sock.async_receive_from(asio::buffer(m_v6_buf, m_v6_buf_size)
-                , m_v6_ep, boost::bind(&udp_socket::on_read, this, &m_ipv6_sock
-                , _1, _2));
+            m_ipv6_sock.async_receive_from(asio::buffer(m_v6_buf, m_v6_buf_size), m_v6_ep,
+                                           boost::bind(&udp_socket::on_read, this, &m_ipv6_sock, _1, _2));
         }
     }
-#endif // LIBED2K_USE_IPV6
+#endif  // LIBED2K_USE_IPV6
 
 #ifdef LIBED2K_DEBUG
-        m_started = true;
+    m_started = true;
 #endif
     m_bind_port = port;
 }
 
-void udp_socket::set_proxy_settings(proxy_settings const& ps)
-{
+void udp_socket::set_proxy_settings(proxy_settings const& ps) {
     CHECK_MAGIC;
     LIBED2K_ASSERT(is_single_thread());
 
@@ -761,9 +693,7 @@ void udp_socket::set_proxy_settings(proxy_settings const& ps)
 
     if (m_abort) return;
 
-    if (ps.type == proxy_settings::socks5
-        || ps.type == proxy_settings::socks5_pw)
-    {
+    if (ps.type == proxy_settings::socks5 || ps.type == proxy_settings::socks5_pw) {
         m_queue_packets = true;
         // connect to socks5 server and open up the UDP tunnel
         tcp::resolver::query q(ps.hostname, to_string(ps.port).elems);
@@ -771,13 +701,11 @@ void udp_socket::set_proxy_settings(proxy_settings const& ps)
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
         ++m_outstanding_resolve;
 #endif
-        m_resolver.async_resolve(q, boost::bind(
-            &udp_socket::on_name_lookup, this, _1, _2));
+        m_resolver.async_resolve(q, boost::bind(&udp_socket::on_name_lookup, this, _1, _2));
     }
 }
 
-void udp_socket::on_name_lookup(error_code const& e, tcp::resolver::iterator i)
-{
+void udp_socket::on_name_lookup(error_code const& e, tcp::resolver::iterator i) {
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
     LIBED2K_ASSERT(m_outstanding_resolve > 0);
     --m_outstanding_resolve;
@@ -785,14 +713,11 @@ void udp_socket::on_name_lookup(error_code const& e, tcp::resolver::iterator i)
 
     LIBED2K_ASSERT(m_outstanding_ops > 0);
     --m_outstanding_ops;
-    LIBED2K_ASSERT(m_outstanding_ops == m_outstanding_connect
-        + m_outstanding_timeout
-        + m_outstanding_resolve
-        + m_outstanding_connect_queue
-        + m_outstanding_socks);
+    LIBED2K_ASSERT(m_outstanding_ops ==
+                   m_outstanding_connect + m_outstanding_timeout + m_outstanding_resolve + m_outstanding_connect_queue +
+                       m_outstanding_socks);
 
-    if (m_abort)
-    {
+    if (m_abort) {
         maybe_clear_callback();
         return;
     }
@@ -802,11 +727,11 @@ void udp_socket::on_name_lookup(error_code const& e, tcp::resolver::iterator i)
 
     LIBED2K_ASSERT(is_single_thread());
 
-    if (e)
-    {
+    if (e) {
         LIBED2K_TRY {
             if (m_callback) m_callback(e, udp::endpoint(), 0, 0);
-        } LIBED2K_CATCH (std::exception&) {}
+        }
+        LIBED2K_CATCH(std::exception&) {}
 
         drain_queue();
 
@@ -834,28 +759,24 @@ void udp_socket::on_name_lookup(error_code const& e, tcp::resolver::iterator i)
     ++m_outstanding_timeout;
     ++m_outstanding_connect_queue;
 #endif
-    m_cc.enqueue(boost::bind(&udp_socket::on_connect, this, _1)
-        , boost::bind(&udp_socket::on_timeout, this), seconds(10));
+    m_cc.enqueue(boost::bind(&udp_socket::on_connect, this, _1), boost::bind(&udp_socket::on_timeout, this),
+                 seconds(10));
 }
 
-void udp_socket::on_timeout()
-{
+void udp_socket::on_timeout() {
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
     LIBED2K_ASSERT(m_outstanding_timeout > 0);
     --m_outstanding_timeout;
 #endif
     LIBED2K_ASSERT(m_outstanding_ops > 0);
     --m_outstanding_ops;
-    LIBED2K_ASSERT(m_outstanding_ops == m_outstanding_connect
-        + m_outstanding_timeout
-        + m_outstanding_resolve
-        + m_outstanding_connect_queue
-        + m_outstanding_socks);
+    LIBED2K_ASSERT(m_outstanding_ops ==
+                   m_outstanding_connect + m_outstanding_timeout + m_outstanding_resolve + m_outstanding_connect_queue +
+                       m_outstanding_socks);
 
     m_queue_packets = false;
 
-    if (m_abort)
-    {
+    if (m_abort) {
         maybe_clear_callback();
         return;
     }
@@ -867,8 +788,7 @@ void udp_socket::on_timeout()
     m_connection_ticket = -1;
 }
 
-void udp_socket::on_connect(int ticket)
-{
+void udp_socket::on_connect(int ticket) {
     LIBED2K_ASSERT(is_single_thread());
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
     LIBED2K_ASSERT(m_outstanding_connect_queue > 0);
@@ -876,31 +796,25 @@ void udp_socket::on_connect(int ticket)
 #endif
     LIBED2K_ASSERT(m_outstanding_ops > 0);
     --m_outstanding_ops;
-    LIBED2K_ASSERT(m_outstanding_ops == m_outstanding_connect
-        + m_outstanding_timeout
-        + m_outstanding_resolve
-        + m_outstanding_connect_queue
-        + m_outstanding_socks);
+    LIBED2K_ASSERT(m_outstanding_ops ==
+                   m_outstanding_connect + m_outstanding_timeout + m_outstanding_resolve + m_outstanding_connect_queue +
+                       m_outstanding_socks);
 
-    if (ticket == -1)
-    {
+    if (ticket == -1) {
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
         LIBED2K_ASSERT(m_outstanding_timeout > 0);
         --m_outstanding_timeout;
 #endif
         LIBED2K_ASSERT(m_outstanding_ops > 0);
         --m_outstanding_ops;
-        LIBED2K_ASSERT(m_outstanding_ops == m_outstanding_connect
-            + m_outstanding_timeout
-            + m_outstanding_resolve
-            + m_outstanding_connect_queue
-            + m_outstanding_socks);
+        LIBED2K_ASSERT(m_outstanding_ops ==
+                       m_outstanding_connect + m_outstanding_timeout + m_outstanding_resolve +
+                           m_outstanding_connect_queue + m_outstanding_socks);
         close();
         return;
     }
 
-    if (m_abort)
-    {
+    if (m_abort) {
         maybe_clear_callback();
         return;
     }
@@ -915,17 +829,16 @@ void udp_socket::on_connect(int ticket)
     m_connection_ticket = ticket;
 
     error_code ec;
-    m_socks5_sock.open(m_proxy_addr.address().is_v4()?tcp::v4():tcp::v6(), ec);
+    m_socks5_sock.open(m_proxy_addr.address().is_v4() ? tcp::v4() : tcp::v6(), ec);
     ++m_outstanding_ops;
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
     ++m_outstanding_connect;
 #endif
-    m_socks5_sock.async_connect(tcp::endpoint(m_proxy_addr.address(), m_proxy_addr.port())
-        , boost::bind(&udp_socket::on_connected, this, _1));
+    m_socks5_sock.async_connect(tcp::endpoint(m_proxy_addr.address(), m_proxy_addr.port()),
+                                boost::bind(&udp_socket::on_connected, this, _1));
 }
 
-void udp_socket::on_connected(error_code const& e)
-{
+void udp_socket::on_connected(error_code const& e) {
 #if defined LIBED2K_ASIO_DEBUGGING
     complete_async("udp_socket::on_connected");
 #endif
@@ -935,14 +848,11 @@ void udp_socket::on_connected(error_code const& e)
 #endif
     LIBED2K_ASSERT(m_outstanding_ops > 0);
     --m_outstanding_ops;
-    LIBED2K_ASSERT(m_outstanding_ops == m_outstanding_connect
-        + m_outstanding_timeout
-        + m_outstanding_resolve
-        + m_outstanding_connect_queue
-        + m_outstanding_socks);
+    LIBED2K_ASSERT(m_outstanding_ops ==
+                   m_outstanding_connect + m_outstanding_timeout + m_outstanding_resolve + m_outstanding_connect_queue +
+                       m_outstanding_socks);
 
-    if (m_abort)
-    {
+    if (m_abort) {
         maybe_clear_callback();
         return;
     }
@@ -954,32 +864,29 @@ void udp_socket::on_connected(error_code const& e)
     m_cc.done(m_connection_ticket);
     m_connection_ticket = -1;
 
-    // we just called done, which means on_timeout
-    // won't be called. Decrement the outstanding
-    // ops counter for that
+// we just called done, which means on_timeout
+// won't be called. Decrement the outstanding
+// ops counter for that
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
     LIBED2K_ASSERT(m_outstanding_timeout > 0);
     --m_outstanding_timeout;
 #endif
     LIBED2K_ASSERT(m_outstanding_ops > 0);
     --m_outstanding_ops;
-    LIBED2K_ASSERT(m_outstanding_ops == m_outstanding_connect
-        + m_outstanding_timeout
-        + m_outstanding_resolve
-        + m_outstanding_connect_queue
-        + m_outstanding_socks);
+    LIBED2K_ASSERT(m_outstanding_ops ==
+                   m_outstanding_connect + m_outstanding_timeout + m_outstanding_resolve + m_outstanding_connect_queue +
+                       m_outstanding_socks);
 
-    if (m_abort)
-    {
+    if (m_abort) {
         maybe_clear_callback();
         return;
     }
 
-    if (e)
-    {
+    if (e) {
         LIBED2K_TRY {
             if (m_callback) m_callback(e, udp::endpoint(), 0, 0);
-        } LIBED2K_CATCH (std::exception&) {}
+        }
+        LIBED2K_CATCH(std::exception&) {}
         return;
     }
 
@@ -987,18 +894,14 @@ void udp_socket::on_connected(error_code const& e)
 
     // send SOCKS5 authentication methods
     char* p = &m_tmp_buf[0];
-    write_uint8(5, p); // SOCKS VERSION 5
-    if (m_proxy_settings.username.empty()
-        || m_proxy_settings.type == proxy_settings::socks5)
-    {
-        write_uint8(1, p); // 1 authentication method (no auth)
-        write_uint8(0, p); // no authentication
-    }
-    else
-    {
-        write_uint8(2, p); // 2 authentication methods
-        write_uint8(0, p); // no authentication
-        write_uint8(2, p); // username/password
+    write_uint8(5, p);  // SOCKS VERSION 5
+    if (m_proxy_settings.username.empty() || m_proxy_settings.type == proxy_settings::socks5) {
+        write_uint8(1, p);  // 1 authentication method (no auth)
+        write_uint8(0, p);  // no authentication
+    } else {
+        write_uint8(2, p);  // 2 authentication methods
+        write_uint8(0, p);  // no authentication
+        write_uint8(2, p);  // username/password
     }
     LIBED2K_ASSERT_VAL(p - m_tmp_buf < int(sizeof(m_tmp_buf)), (p - m_tmp_buf));
 #if defined LIBED2K_ASIO_DEBUGGING
@@ -1008,12 +911,11 @@ void udp_socket::on_connected(error_code const& e)
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
     ++m_outstanding_socks;
 #endif
-    asio::async_write(m_socks5_sock, asio::buffer(m_tmp_buf, p - m_tmp_buf)
-        , boost::bind(&udp_socket::handshake1, this, _1));
+    asio::async_write(m_socks5_sock, asio::buffer(m_tmp_buf, p - m_tmp_buf),
+                      boost::bind(&udp_socket::handshake1, this, _1));
 }
 
-void udp_socket::handshake1(error_code const& e)
-{
+void udp_socket::handshake1(error_code const& e) {
 #if defined LIBED2K_ASIO_DEBUGGING
     complete_async("udp_socket::on_handshake1");
 #endif
@@ -1023,20 +925,16 @@ void udp_socket::handshake1(error_code const& e)
 #endif
     LIBED2K_ASSERT(m_outstanding_ops > 0);
     --m_outstanding_ops;
-    LIBED2K_ASSERT(m_outstanding_ops == m_outstanding_connect
-        + m_outstanding_timeout
-        + m_outstanding_resolve
-        + m_outstanding_connect_queue
-        + m_outstanding_socks);
+    LIBED2K_ASSERT(m_outstanding_ops ==
+                   m_outstanding_connect + m_outstanding_timeout + m_outstanding_resolve + m_outstanding_connect_queue +
+                       m_outstanding_socks);
 
-    if (m_abort)
-    {
+    if (m_abort) {
         maybe_clear_callback();
         return;
     }
     CHECK_MAGIC;
-    if (e)
-    {
+    if (e) {
         drain_queue();
         return;
     }
@@ -1050,12 +948,10 @@ void udp_socket::handshake1(error_code const& e)
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
     ++m_outstanding_socks;
 #endif
-    asio::async_read(m_socks5_sock, asio::buffer(m_tmp_buf, 2)
-        , boost::bind(&udp_socket::handshake2, this, _1));
+    asio::async_read(m_socks5_sock, asio::buffer(m_tmp_buf, 2), boost::bind(&udp_socket::handshake2, this, _1));
 }
 
-void udp_socket::handshake2(error_code const& e)
-{
+void udp_socket::handshake2(error_code const& e) {
 #if defined LIBED2K_ASIO_DEBUGGING
     complete_async("udp_socket::on_handshake2");
 #endif
@@ -1065,21 +961,17 @@ void udp_socket::handshake2(error_code const& e)
 #endif
     LIBED2K_ASSERT(m_outstanding_ops > 0);
     --m_outstanding_ops;
-    LIBED2K_ASSERT(m_outstanding_ops == m_outstanding_connect
-        + m_outstanding_timeout
-        + m_outstanding_resolve
-        + m_outstanding_connect_queue
-        + m_outstanding_socks);
+    LIBED2K_ASSERT(m_outstanding_ops ==
+                   m_outstanding_connect + m_outstanding_timeout + m_outstanding_resolve + m_outstanding_connect_queue +
+                       m_outstanding_socks);
 
-    if (m_abort)
-    {
+    if (m_abort) {
         maybe_clear_callback();
         return;
     }
     CHECK_MAGIC;
 
-    if (e)
-    {
+    if (e) {
         drain_queue();
         return;
     }
@@ -1092,22 +984,17 @@ void udp_socket::handshake2(error_code const& e)
     int version = read_uint8(p);
     int method = read_uint8(p);
 
-    if (version < 5)
-    {
+    if (version < 5) {
         error_code ec;
         m_socks5_sock.close(ec);
         drain_queue();
         return;
     }
 
-    if (method == 0)
-    {
+    if (method == 0) {
         socks_forward_udp(/*l*/);
-    }
-    else if (method == 2)
-    {
-        if (m_proxy_settings.username.empty())
-        {
+    } else if (method == 2) {
+        if (m_proxy_settings.username.empty()) {
             error_code ec;
             m_socks5_sock.close(ec);
             drain_queue();
@@ -1129,11 +1016,9 @@ void udp_socket::handshake2(error_code const& e)
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
         ++m_outstanding_socks;
 #endif
-        asio::async_write(m_socks5_sock, asio::buffer(m_tmp_buf, p - m_tmp_buf)
-            , boost::bind(&udp_socket::handshake3, this, _1));
-    }
-    else
-    {
+        asio::async_write(m_socks5_sock, asio::buffer(m_tmp_buf, p - m_tmp_buf),
+                          boost::bind(&udp_socket::handshake3, this, _1));
+    } else {
         drain_queue();
         error_code ec;
         m_socks5_sock.close(ec);
@@ -1141,8 +1026,7 @@ void udp_socket::handshake2(error_code const& e)
     }
 }
 
-void udp_socket::handshake3(error_code const& e)
-{
+void udp_socket::handshake3(error_code const& e) {
 #if defined LIBED2K_ASIO_DEBUGGING
     complete_async("udp_socket::on_handshake3");
 #endif
@@ -1152,20 +1036,16 @@ void udp_socket::handshake3(error_code const& e)
 #endif
     LIBED2K_ASSERT(m_outstanding_ops > 0);
     --m_outstanding_ops;
-    LIBED2K_ASSERT(m_outstanding_ops == m_outstanding_connect
-        + m_outstanding_timeout
-        + m_outstanding_resolve
-        + m_outstanding_connect_queue
-        + m_outstanding_socks);
+    LIBED2K_ASSERT(m_outstanding_ops ==
+                   m_outstanding_connect + m_outstanding_timeout + m_outstanding_resolve + m_outstanding_connect_queue +
+                       m_outstanding_socks);
 
-    if (m_abort)
-    {
+    if (m_abort) {
         maybe_clear_callback();
         return;
     }
     CHECK_MAGIC;
-    if (e)
-    {
+    if (e) {
         drain_queue();
         return;
     }
@@ -1179,12 +1059,10 @@ void udp_socket::handshake3(error_code const& e)
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
     ++m_outstanding_socks;
 #endif
-    asio::async_read(m_socks5_sock, asio::buffer(m_tmp_buf, 2)
-        , boost::bind(&udp_socket::handshake4, this, _1));
+    asio::async_read(m_socks5_sock, asio::buffer(m_tmp_buf, 2), boost::bind(&udp_socket::handshake4, this, _1));
 }
 
-void udp_socket::handshake4(error_code const& e)
-{
+void udp_socket::handshake4(error_code const& e) {
 #if defined LIBED2K_ASIO_DEBUGGING
     complete_async("udp_socket::on_handshake4");
 #endif
@@ -1194,20 +1072,16 @@ void udp_socket::handshake4(error_code const& e)
 #endif
     LIBED2K_ASSERT(m_outstanding_ops > 0);
     --m_outstanding_ops;
-    LIBED2K_ASSERT(m_outstanding_ops == m_outstanding_connect
-        + m_outstanding_timeout
-        + m_outstanding_resolve
-        + m_outstanding_connect_queue
-        + m_outstanding_socks);
+    LIBED2K_ASSERT(m_outstanding_ops ==
+                   m_outstanding_connect + m_outstanding_timeout + m_outstanding_resolve + m_outstanding_connect_queue +
+                       m_outstanding_socks);
 
-    if (m_abort)
-    {
+    if (m_abort) {
         maybe_clear_callback();
         return;
     }
     CHECK_MAGIC;
-    if (e)
-    {
+    if (e) {
         drain_queue();
         return;
     }
@@ -1220,8 +1094,7 @@ void udp_socket::handshake4(error_code const& e)
     int version = read_uint8(p);
     int status = read_uint8(p);
 
-    if (version != 1 || status != 0)
-    {
+    if (version != 1 || status != 0) {
         drain_queue();
         return;
     }
@@ -1229,20 +1102,19 @@ void udp_socket::handshake4(error_code const& e)
     socks_forward_udp(/*l*/);
 }
 
-void udp_socket::socks_forward_udp()
-{
+void udp_socket::socks_forward_udp() {
     CHECK_MAGIC;
     using namespace libed2k::detail;
 
     // send SOCKS5 UDP command
     char* p = &m_tmp_buf[0];
-    write_uint8(5, p); // SOCKS VERSION 5
-    write_uint8(3, p); // UDP ASSOCIATE command
-    write_uint8(0, p); // reserved
+    write_uint8(5, p);  // SOCKS VERSION 5
+    write_uint8(3, p);  // UDP ASSOCIATE command
+    write_uint8(0, p);  // reserved
     error_code ec;
-    write_uint8(1, p); // ATYP = IPv4
-    write_uint32(0, p); // 0.0.0.0
-    write_uint16(0, p); // :0
+    write_uint8(1, p);   // ATYP = IPv4
+    write_uint32(0, p);  // 0.0.0.0
+    write_uint16(0, p);  // :0
     LIBED2K_ASSERT_VAL(p - m_tmp_buf < int(sizeof(m_tmp_buf)), (p - m_tmp_buf));
 #if defined LIBED2K_ASIO_DEBUGGING
     add_outstanding_async("udp_socket::connect1");
@@ -1251,12 +1123,11 @@ void udp_socket::socks_forward_udp()
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
     ++m_outstanding_socks;
 #endif
-    asio::async_write(m_socks5_sock, asio::buffer(m_tmp_buf, p - m_tmp_buf)
-        , boost::bind(&udp_socket::connect1, this, _1));
+    asio::async_write(m_socks5_sock, asio::buffer(m_tmp_buf, p - m_tmp_buf),
+                      boost::bind(&udp_socket::connect1, this, _1));
 }
 
-void udp_socket::connect1(error_code const& e)
-{
+void udp_socket::connect1(error_code const& e) {
 #if defined LIBED2K_ASIO_DEBUGGING
     complete_async("udp_socket::connect1");
 #endif
@@ -1266,20 +1137,16 @@ void udp_socket::connect1(error_code const& e)
 #endif
     LIBED2K_ASSERT(m_outstanding_ops > 0);
     --m_outstanding_ops;
-    LIBED2K_ASSERT(m_outstanding_ops == m_outstanding_connect
-        + m_outstanding_timeout
-        + m_outstanding_resolve
-        + m_outstanding_connect_queue
-        + m_outstanding_socks);
+    LIBED2K_ASSERT(m_outstanding_ops ==
+                   m_outstanding_connect + m_outstanding_timeout + m_outstanding_resolve + m_outstanding_connect_queue +
+                       m_outstanding_socks);
 
-    if (m_abort)
-    {
+    if (m_abort) {
         maybe_clear_callback();
         return;
     }
     CHECK_MAGIC;
-    if (e)
-    {
+    if (e) {
         drain_queue();
         return;
     }
@@ -1293,12 +1160,10 @@ void udp_socket::connect1(error_code const& e)
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
     ++m_outstanding_socks;
 #endif
-    asio::async_read(m_socks5_sock, asio::buffer(m_tmp_buf, 10)
-        , boost::bind(&udp_socket::connect2, this, _1));
+    asio::async_read(m_socks5_sock, asio::buffer(m_tmp_buf, 10), boost::bind(&udp_socket::connect2, this, _1));
 }
 
-void udp_socket::connect2(error_code const& e)
-{
+void udp_socket::connect2(error_code const& e) {
 #if defined LIBED2K_ASIO_DEBUGGING
     complete_async("udp_socket::connect2");
 #endif
@@ -1308,21 +1173,17 @@ void udp_socket::connect2(error_code const& e)
 #endif
     LIBED2K_ASSERT(m_outstanding_ops > 0);
     --m_outstanding_ops;
-    LIBED2K_ASSERT(m_outstanding_ops == m_outstanding_connect
-        + m_outstanding_timeout
-        + m_outstanding_resolve
-        + m_outstanding_connect_queue
-        + m_outstanding_socks);
+    LIBED2K_ASSERT(m_outstanding_ops ==
+                   m_outstanding_connect + m_outstanding_timeout + m_outstanding_resolve + m_outstanding_connect_queue +
+                       m_outstanding_socks);
 
-    if (m_abort)
-    {
+    if (m_abort) {
         m_queue.clear();
         maybe_clear_callback();
         return;
     }
     CHECK_MAGIC;
-    if (e)
-    {
+    if (e) {
         drain_queue();
         return;
     }
@@ -1332,24 +1193,20 @@ void udp_socket::connect2(error_code const& e)
     using namespace libed2k::detail;
 
     char* p = &m_tmp_buf[0];
-    int version = read_uint8(p); // VERSION
-    int status = read_uint8(p); // STATUS
-    ++p; // RESERVED
-    int atyp = read_uint8(p); // address type
+    int version = read_uint8(p);  // VERSION
+    int status = read_uint8(p);   // STATUS
+    ++p;                          // RESERVED
+    int atyp = read_uint8(p);     // address type
 
-    if (version != 5 || status != 0)
-    {
+    if (version != 5 || status != 0) {
         drain_queue();
         return;
     }
 
-    if (atyp == 1)
-    {
+    if (atyp == 1) {
         m_udp_proxy_addr.address(address_v4(read_uint32(p)));
         m_udp_proxy_addr.port(read_uint16(p));
-    }
-    else
-    {
+    } else {
         // in this case we need to read more data from the socket
         LIBED2K_ASSERT(false && "not implemented yet!");
         drain_queue();
@@ -1366,12 +1223,10 @@ void udp_socket::connect2(error_code const& e)
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
     ++m_outstanding_socks;
 #endif
-    asio::async_read(m_socks5_sock, asio::buffer(m_tmp_buf, 10)
-        , boost::bind(&udp_socket::hung_up, this, _1));
+    asio::async_read(m_socks5_sock, asio::buffer(m_tmp_buf, 10), boost::bind(&udp_socket::hung_up, this, _1));
 }
 
-void udp_socket::hung_up(error_code const& e)
-{
+void udp_socket::hung_up(error_code const& e) {
 #if defined LIBED2K_ASIO_DEBUGGING
     complete_async("udp_socket::hung_up");
 #endif
@@ -1381,14 +1236,11 @@ void udp_socket::hung_up(error_code const& e)
 #endif
     LIBED2K_ASSERT(m_outstanding_ops > 0);
     --m_outstanding_ops;
-    LIBED2K_ASSERT(m_outstanding_ops == m_outstanding_connect
-        + m_outstanding_timeout
-        + m_outstanding_resolve
-        + m_outstanding_connect_queue
-        + m_outstanding_socks);
+    LIBED2K_ASSERT(m_outstanding_ops ==
+                   m_outstanding_connect + m_outstanding_timeout + m_outstanding_resolve + m_outstanding_connect_queue +
+                       m_outstanding_socks);
 
-    if (m_abort)
-    {
+    if (m_abort) {
         maybe_clear_callback();
         return;
     }
@@ -1401,21 +1253,17 @@ void udp_socket::hung_up(error_code const& e)
     set_proxy_settings(m_proxy_settings);
 }
 
-void udp_socket::drain_queue()
-{
+void udp_socket::drain_queue() {
     m_queue_packets = false;
 
     // forward all packets that were put in the queue
-    while (!m_queue.empty())
-    {
+    while (!m_queue.empty()) {
         queued_packet const& p = m_queue.front();
         error_code ec;
-        if (p.hostname)
-        {
+        if (p.hostname) {
             udp_socket::send_hostname(p.hostname, p.ep.port(), &p.buf[0], p.buf.size(), ec);
             free(p.hostname);
-        }
-        else if (!m_force_proxy) // block incoming packets that aren't coming via the proxy
+        } else if (!m_force_proxy)  // block incoming packets that aren't coming via the proxy
         {
             udp_socket::send(p.ep, &p.buf[0], p.buf.size(), ec, p.flags);
         }
@@ -1423,20 +1271,11 @@ void udp_socket::drain_queue()
     }
 }
 
-rate_limited_udp_socket::rate_limited_udp_socket(io_service& ios
-    , callback_t const& c
-    , callback2_t const& c2
-    , connection_queue& cc)
-    : udp_socket(ios, c, c2, cc)
-    , m_rate_limit(8000)
-    , m_quota(8000)
-    , m_last_tick(time_now())
-{
-}
+rate_limited_udp_socket::rate_limited_udp_socket(io_service& ios, callback_t const& c, callback2_t const& c2,
+                                                 connection_queue& cc)
+    : udp_socket(ios, c, c2, cc), m_rate_limit(8000), m_quota(8000), m_last_tick(time_now()) {}
 
-bool rate_limited_udp_socket::send(udp::endpoint const& ep, char const* p
-    , int len, error_code& ec, int flags)
-{
+bool rate_limited_udp_socket::send(udp::endpoint const& ep, char const* p, int len, error_code& ec, int flags) {
     ptime now = time_now_hires();
     time_duration delta = now - m_last_tick;
     m_last_tick = now;

@@ -35,27 +35,24 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "libed2k/config.hpp"
 #include "libed2k/hasher.hpp"
-#include "libed2k/peer_id.hpp" // for sha1
+#include "libed2k/peer_id.hpp"  // for sha1
 
-namespace libed2k
-{
-	// both of these use SHA-1 as the message digest to be signed/verified
+namespace libed2k {
+// both of these use SHA-1 as the message digest to be signed/verified
 
-	// returns the size of the resulting signature
-    LIBED2K_EXTRA_EXPORT int sign_rsa(sha1_hash const& digest
-		, char const* private_key, int private_len
-		, char* signature, int sig_len);
+// returns the size of the resulting signature
+LIBED2K_EXTRA_EXPORT int sign_rsa(sha1_hash const& digest, char const* private_key, int private_len, char* signature,
+                                  int sig_len);
 
-	// returns true if the signature is valid
-    LIBED2K_EXTRA_EXPORT bool verify_rsa(sha1_hash const& digest
-		, char const* public_key, int public_len
-		, char const* signature, int sig_len);
+// returns true if the signature is valid
+LIBED2K_EXTRA_EXPORT bool verify_rsa(sha1_hash const& digest, char const* public_key, int public_len,
+                                     char const* signature, int sig_len);
 
-	// returns false if it fails, for instance if the key
-	// buffers are too small. public_len and private_len
-	// are in-out values, set to the actual sizes
-    LIBED2K_EXTRA_EXPORT bool generate_rsa_keys(char* public_key, int* public_len
-		, char* private_key, int* private_len, int key_size);
+// returns false if it fails, for instance if the key
+// buffers are too small. public_len and private_len
+// are in-out values, set to the actual sizes
+LIBED2K_EXTRA_EXPORT bool generate_rsa_keys(char* public_key, int* public_len, char* private_key, int* private_len,
+                                            int key_size);
 }
 
-#endif // LIBED2K_SIGN_HPP_INCLUDED
+#endif  // LIBED2K_SIGN_HPP_INCLUDED

@@ -37,10 +37,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <vector>
 
-namespace libed2k
-{
-    bool inflate_gzip(
-        char const* in, int size, std::vector<char>& buffer, int maximum_size, std::string& error);
+namespace libed2k {
+bool inflate_gzip(char const* in, int size, std::vector<char>& buffer, int maximum_size, std::string& error);
 }
 
 #endif

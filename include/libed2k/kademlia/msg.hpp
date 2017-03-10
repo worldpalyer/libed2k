@@ -51,17 +51,16 @@ typedef std::vector<char> packet_t;
 typedef std::vector<node_entry> nodes_t;
 typedef std::vector<tcp::endpoint> peers_t;
 
-struct msg
-{
-	msg(message const& m, udp::endpoint const& ep): m_message(m), addr(ep) {}
-	// the message
-	message const& m_message;
+struct msg {
+    msg(message const& m, udp::endpoint const& ep) : m_message(m), addr(ep) {}
+    // the message
+    message const& m_message;
 
-	// the address of the process sending or receiving
-	// the message.
-	udp::endpoint addr;
+    // the address of the process sending or receiving
+    // the message.
+    udp::endpoint addr;
 };
-
-} }
+}
+}
 
 #endif

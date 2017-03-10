@@ -35,8 +35,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/config.hpp>
 #include <boost/version.hpp>
-#include <stdio.h> // for snprintf
-#include <limits.h> // for IOV_MAX
+#include <stdio.h>   // for snprintf
+#include <limits.h>  // for IOV_MAX
 
 #if defined LIBED2K_DEBUG_BUFFERS && !defined LIBED2K_DISABLE_POOL_ALLOCATOR
 #error LIBED2K_DEBUG_BUFFERS only works if you also disable pool allocators with LIBED2K_DISABLE_POOL_ALLOCATOR
@@ -46,7 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS 1
 #endif
-#include <stdint.h> // for INT64_MAX
+#include <stdint.h>  // for INT64_MAX
 #else
 #if !defined INT64_MAX
 #define INT64_MAX 0x7fffffffffffffffLL
@@ -57,7 +57,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS 1
 #endif
-#include <inttypes.h> // for PRId64 et.al.
+#include <inttypes.h>  // for PRId64 et.al.
 #endif
 
 #ifndef PRId64
@@ -79,45 +79,45 @@ POSSIBILITY OF SUCH DAMAGE.
 
 // backwards compatibility with older versions of boost
 #if !defined BOOST_SYMBOL_EXPORT && !defined BOOST_SYMBOL_IMPORT
-# if defined _MSC_VER || defined __MINGW32__
-#  define BOOST_SYMBOL_EXPORT __declspec(dllexport)
-#  define BOOST_SYMBOL_IMPORT __declspec(dllimport)
-# elif __GNU__ >= 4
-#  define BOOST_SYMBOL_EXPORT __attribute__((visibility("default")))
-#  define BOOST_SYMBOL_IMPORT __attribute__((visibility("default")))
-# else
-#  define BOOST_SYMBOL_EXPORT
-#  define BOOST_SYMBOL_IMPORT
-# endif
+#if defined _MSC_VER || defined __MINGW32__
+#define BOOST_SYMBOL_EXPORT __declspec(dllexport)
+#define BOOST_SYMBOL_IMPORT __declspec(dllimport)
+#elif __GNU__ >= 4
+#define BOOST_SYMBOL_EXPORT __attribute__((visibility("default")))
+#define BOOST_SYMBOL_IMPORT __attribute__((visibility("default")))
+#else
+#define BOOST_SYMBOL_EXPORT
+#define BOOST_SYMBOL_IMPORT
+#endif
 #endif
 
 #if defined LIBED2K_BUILDING_SHARED
-# define LIBED2K_EXPORT BOOST_SYMBOL_EXPORT
+#define LIBED2K_EXPORT BOOST_SYMBOL_EXPORT
 #elif defined LIBED2K_LINKING_SHARED
-# define LIBED2K_EXPORT BOOST_SYMBOL_IMPORT
+#define LIBED2K_EXPORT BOOST_SYMBOL_IMPORT
 #endif
 
 // when this is specified, export a bunch of extra
 // symbols, mostly for the unit tests to reach
 #if LIBED2K_EXPORT_EXTRA
-# if defined LIBED2K_BUILDING_SHARED
-#  define LIBED2K_EXTRA_EXPORT BOOST_SYMBOL_EXPORT
-# elif defined LIBED2K_LINKING_SHARED
-#  define LIBED2K_EXTRA_EXPORT BOOST_SYMBOL_IMPORT
-# endif
+#if defined LIBED2K_BUILDING_SHARED
+#define LIBED2K_EXTRA_EXPORT BOOST_SYMBOL_EXPORT
+#elif defined LIBED2K_LINKING_SHARED
+#define LIBED2K_EXTRA_EXPORT BOOST_SYMBOL_IMPORT
+#endif
 #endif
 
 #ifndef LIBED2K_EXTRA_EXPORT
-# define LIBED2K_EXTRA_EXPORT
+#define LIBED2K_EXTRA_EXPORT
 #endif
 
 // ======= GCC =========
 
 #if defined __GNUC__
 
-# if __GNUC__ >= 3
-#  define LIBED2K_DEPRECATED __attribute__ ((deprecated))
-# endif
+#if __GNUC__ >= 3
+#define LIBED2K_DEPRECATED __attribute__((deprecated))
+#endif
 
 // ======= SUNPRO =========
 
@@ -139,24 +139,22 @@ POSSIBILITY OF SUCH DAMAGE.
     build, to automatically apply these defines
 #endif
 
-#pragma warning(disable: 4258)
-#pragma warning(disable: 4251)
+#pragma warning(disable : 4258)
+#pragma warning(disable : 4251)
 
 // class X needs to have dll-interface to be used by clients of class Y
-#pragma warning(disable:4251)
+#pragma warning(disable : 4251)
 // '_vsnprintf': This function or variable may be unsafe
-#pragma warning(disable:4996)
+#pragma warning(disable : 4996)
 // 'strdup': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _strdup
-#pragma warning(disable: 4996)
+#pragma warning(disable : 4996)
 #define strdup _strdup
 
 #define LIBED2K_DEPRECATED_PREFIX __declspec(deprecated)
 
 #endif
 
-
 // ======= PLATFORMS =========
-
 
 // set up defines for target environments
 // ==== AMIGA ===
@@ -177,9 +175,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 // ==== Darwin/BSD ===
-#elif (defined __APPLE__ && defined __MACH__) || defined __FreeBSD__ || defined __NetBSD__ \
-    || defined __OpenBSD__ || defined __bsdi__ || defined __DragonFly__ \
-    || defined __FreeBSD_kernel__
+#elif (defined __APPLE__ && defined __MACH__) || defined __FreeBSD__ || defined __NetBSD__ || defined __OpenBSD__ || \
+    defined __bsdi__ || defined __DragonFly__ || defined __FreeBSD_kernel__
 #define LIBED2K_BSD
 // we don't need iconv on mac, because
 // the locale is always utf-8
@@ -198,14 +195,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #define LIBED2K_USE_SYSCTL 1
 #define LIBED2K_USE_IFCONF 1
 
-
 // ==== LINUX ===
 // avoid android cross compiler treats as linux
 #elif defined __linux__
 #define LIBED2K_LINUX
 
 #if !defined __ANDROID__
-  #define LIBED2K_USE_IFADDRS 1
+#define LIBED2K_USE_IFADDRS 1
 #endif
 
 #define LIBED2K_USE_NETLINK 1
@@ -258,7 +254,7 @@ POSSIBILITY OF SUCH DAMAGE.
 // ==== BEOS ===
 #elif defined __BEOS__ || defined __HAIKU__
 #define LIBED2K_BEOS
-#include <storage/StorageDefs.h> // B_PATH_NAME_LENGTH
+#include <storage/StorageDefs.h>  // B_PATH_NAME_LENGTH
 #define LIBED2K_HAS_FALLOCATE 0
 #define LIBED2K_USE_MLOCK 0
 #ifndef LIBED2K_USE_ICONV
@@ -308,17 +304,18 @@ POSSIBILITY OF SUCH DAMAGE.
 #if defined LIBED2K_WINDOWS && !defined LIBED2K_MINGW
 
 #include <stdarg.h>
-namespace libed2k
-{
-    inline int snprintf(char* buf, int len, char const* fmt, ...)
-    {
-        va_list lp;
-        va_start(lp, fmt);
-        int ret = vsnprintf(buf, len, fmt, lp);
-        va_end(lp);
-        if (ret < 0) { buf[len-1] = 0; ret = len-1; }
-        return ret;
+namespace libed2k {
+inline int snprintf(char* buf, int len, char const* fmt, ...) {
+    va_list lp;
+    va_start(lp, fmt);
+    int ret = vsnprintf(buf, len, fmt, lp);
+    va_end(lp);
+    if (ret < 0) {
+        buf[len - 1] = 0;
+        ret = len - 1;
     }
+    return ret;
+}
 }
 
 #define strtoll _strtoi64
@@ -326,8 +323,8 @@ namespace libed2k
 #include <limits.h>
 #endif
 
-#if (defined(LIBED2K_LOGGING) || defined(LIBED2K_VERBOSE_LOGGING)) \
-    && !defined (LIBED2K_UPNP_LOGGING) && LIBED2K_USE_IOSTREAM
+#if (defined(LIBED2K_LOGGING) || defined(LIBED2K_VERBOSE_LOGGING)) && !defined(LIBED2K_UPNP_LOGGING) && \
+    LIBED2K_USE_IOSTREAM
 #define LIBED2K_UPNP_LOGGING
 #endif
 
@@ -383,8 +380,8 @@ namespace libed2k
 #define LIBED2K_USE_WSTRING 1
 #else
 #define LIBED2K_USE_WSTRING 0
-#endif // UNICODE
-#endif // LIBED2K_USE_WSTRING
+#endif  // UNICODE
+#endif  // LIBED2K_USE_WSTRING
 
 #ifndef LIBED2K_HAS_FALLOCATE
 #ifndef __ANDROID__
@@ -393,7 +390,7 @@ namespace libed2k
 #endif
 
 #ifndef LIBED2K_EXPORT
-# define LIBED2K_EXPORT
+#define LIBED2K_EXPORT
 #endif
 
 #ifndef LIBED2K_DEPRECATED_PREFIX
@@ -471,15 +468,15 @@ namespace libed2k
 #endif
 
 #if !defined(LIBED2K_READ_HANDLER_MAX_SIZE)
-# define LIBED2K_READ_HANDLER_MAX_SIZE 300
+#define LIBED2K_READ_HANDLER_MAX_SIZE 300
 #endif
 
 #if !defined(LIBED2K_WRITE_HANDLER_MAX_SIZE)
-# define LIBED2K_WRITE_HANDLER_MAX_SIZE 300
+#define LIBED2K_WRITE_HANDLER_MAX_SIZE 300
 #endif
 
 #if defined _MSC_VER && _MSC_VER <= 1200
-#define for if (false) {} else for
+#define for if (false){} else for
 #endif
 
 #if LIBED2K_BROKEN_UNIONS
@@ -492,12 +489,9 @@ namespace libed2k
 // if one is already defined, don't pick one
 // autmatically. This lets the user control this
 // from the Jamfile
-#if !defined LIBED2K_USE_ABSOLUTE_TIME \
-    && !defined LIBED2K_USE_QUERY_PERFORMANCE_TIMER \
-    && !defined LIBED2K_USE_CLOCK_GETTIME \
-    && !defined LIBED2K_USE_BOOST_DATE_TIME \
-    && !defined LIBED2K_USE_ECLOCK \
-    && !defined LIBED2K_USE_SYSTEM_TIME
+#if !defined LIBED2K_USE_ABSOLUTE_TIME && !defined LIBED2K_USE_QUERY_PERFORMANCE_TIMER &&                        \
+    !defined LIBED2K_USE_CLOCK_GETTIME && !defined LIBED2K_USE_BOOST_DATE_TIME && !defined LIBED2K_USE_ECLOCK && \
+    !defined LIBED2K_USE_SYSTEM_TIME
 
 #if defined __APPLE__ && defined __MACH__
 #define LIBED2K_USE_ABSOLUTE_TIME 1
@@ -516,8 +510,7 @@ namespace libed2k
 #endif
 
 #if !LIBED2K_HAS_STRDUP
-inline char* strdup(char const* str)
-{
+inline char* strdup(char const* str) {
     if (str == 0) return 0;
     char* tmp = (char*)malloc(strlen(str) + 1);
     if (tmp == 0) return 0;
@@ -533,9 +526,8 @@ inline char* strdup(char const* str)
 #define LIBED2K_DECLARE_DUMMY(x, y) x y
 #else
 #define LIBED2K_TRY try
-#define LIBED2K_CATCH(x) catch(x)
+#define LIBED2K_CATCH(x) catch (x)
 #define LIBED2K_DECLARE_DUMMY(x, y)
-#endif // BOOST_NO_EXCEPTIONS
+#endif  // BOOST_NO_EXCEPTIONS
 
-
-#endif // LIBED2K_CONFIG_HPP_INCLUDED
+#endif  // LIBED2K_CONFIG_HPP_INCLUDED

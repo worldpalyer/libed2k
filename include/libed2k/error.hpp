@@ -47,15 +47,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/asio/error.hpp>
 #endif
 
-namespace libed2k
-{
+namespace libed2k {
 
 #if BOOST_VERSION < 103500
-    namespace error = asio::error;
+namespace error = asio::error;
 #else
-    namespace error = boost::asio::error;
+namespace error = boost::asio::error;
 #endif
-
 }
 
 #endif

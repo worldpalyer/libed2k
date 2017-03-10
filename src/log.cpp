@@ -10,31 +10,26 @@ using namespace boost::logging;
 BOOST_DEFINE_LOG(g_l, logger_type)
 BOOST_DEFINE_LOG_FILTER(g_l_filter, level::holder)
 
-void init_logs(unsigned char log_destination /*= LC_ALL*/)
-{
-
+void init_logs(unsigned char log_destination /*= LC_ALL*/) {
     // Add formatters and destinations
     // That is, how the message is to be formatted...
-    g_l()->writer().add_formatter( formatter::idx() );
+    g_l()->writer().add_formatter(formatter::idx());
 #ifndef WIN32
-    g_l()->writer().add_formatter( formatter::time("$hh:$mm.$ss ") );
+    g_l()->writer().add_formatter(formatter::time("$hh:$mm.$ss "));
 #endif
-    g_l()->writer().add_formatter( formatter::append_newline() );
+    g_l()->writer().add_formatter(formatter::append_newline());
 
     //        ... and where should it be written to
-    if (log_destination & LOG_CONSOLE)
-    {
-        g_l()->writer().add_destination( destination::cout() );
+    if (log_destination & LOG_CONSOLE) {
+        g_l()->writer().add_destination(destination::cout());
     }
 
-    //g_l()->writer().add_destination( destination::dbg_window() );
-    if (log_destination & LOG_FILE)
-    {
-        g_l()->writer().add_destination( destination::file("out.txt") );
+    // g_l()->writer().add_destination( destination::dbg_window() );
+    if (log_destination & LOG_FILE) {
+        g_l()->writer().add_destination(destination::file("out.txt"));
     }
 
     g_l()->turn_cache_off();
-
 }
 
 #endif

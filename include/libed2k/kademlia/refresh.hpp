@@ -37,42 +37,36 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/kademlia/node_id.hpp>
 #include <libed2k/kademlia/find_data.hpp>
 
-namespace libed2k { namespace dht
-{
+namespace libed2k {
+namespace dht {
 
 class routing_table;
 class rpc_manager;
 
-class refresh : public find_data
-{
-public:
-	typedef find_data::nodes_callback done_callback;
+class refresh : public find_data {
+   public:
+    typedef find_data::nodes_callback done_callback;
 
-	refresh(node_impl& node, node_id target
-		, done_callback const& callback);
+    refresh(node_impl& node, node_id target, done_callback const& callback);
 
-	virtual char const* name() const;
+    virtual char const* name() const;
 
-protected:
-
-	observer_ptr new_observer(void* ptr, udp::endpoint const& ep, node_id const& id);
-	virtual bool invoke(observer_ptr o);
+   protected:
+    observer_ptr new_observer(void* ptr, udp::endpoint const& ep, node_id const& id);
+    virtual bool invoke(observer_ptr o);
 };
 
-class bootstrap : public refresh
-{
-public:
-	bootstrap(node_impl& node, node_id target
-		, done_callback const& callback);
+class bootstrap : public refresh {
+   public:
+    bootstrap(node_impl& node, node_id target, done_callback const& callback);
 
-	virtual char const* name() const;
-protected:
+    virtual char const* name() const;
 
-	virtual void done();
-	virtual bool invoke(observer_ptr o);
+   protected:
+    virtual void done();
+    virtual bool invoke(observer_ptr o);
 };
+}
+}  // namespace libed2k::dht
 
-} } // namespace libed2k::dht
-
-#endif // REFRESH_050324_HPP
-
+#endif  // REFRESH_050324_HPP
