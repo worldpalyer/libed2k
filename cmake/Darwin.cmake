@@ -1,11 +1,11 @@
-# Linux specific configuration
 if(ANDROID)
   return()
 endif()
 
-if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     return()
-endif(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+endif(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+
 
 set(lib_variable "LD_LIBRARY_PATH")
 
@@ -31,12 +31,6 @@ else(bitness MATCHES "64")
     set(l_flags "-m32")
 endif(bitness MATCHES "64")
 
-if(DEFINED production)
-    set(cxx_flags "${cxx_flags} -O2")
-else(DEFINED production)
-    set(cxx_flags "${cxx_flags} -DLIBED2K_DEBUG -O0 -rdynamic -g")
-endif(DEFINED production)
-
 
 if(DEFINED profiling)
     set(cxx_flags "${cxx_flags} -pg")
@@ -61,5 +55,4 @@ else(DEFINED production)
     set(out_dir "${out_dir}/debug")
 endif(PRODUCTION)
 
-
-set(COMMON_LIBRARIES pthread rt)
+set(COMMON_LIBRARIES pthread c++)
