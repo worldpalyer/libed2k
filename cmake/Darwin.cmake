@@ -6,7 +6,6 @@ if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     return()
 endif(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
-
 set(lib_variable "LD_LIBRARY_PATH")
 
 # check compiler version
@@ -30,6 +29,12 @@ else(bitness MATCHES "64")
     set(cxx_flags "-m32 -D_FILE_OFFSET_BITS=64")
     set(l_flags "-m32")
 endif(bitness MATCHES "64")
+
+if(DEFINED production)
+    set(cxx_flags "${cxx_flags} -O2")
+else(DEFINED production)
+    set(cxx_flags "${cxx_flags} -DLIBED2K_DEBUG -O0 -g")
+endif(DEFINED production)
 
 
 if(DEFINED profiling)

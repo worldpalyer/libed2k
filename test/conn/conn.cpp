@@ -95,8 +95,7 @@ using namespace libed2k;
 
  */
 
-enum CONN_CMD
-{
+enum CONN_CMD {
     cc_search,
     cc_simplesearch,
     cc_download,
@@ -117,94 +116,56 @@ enum CONN_CMD
     cc_search_test
 };
 
-CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
-{
-
-    if (strCMD.empty())
-    {
+CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg) {
+    if (strCMD.empty()) {
         return cc_empty;
     }
 
     std::string::size_type nPos = strCMD.find_first_of(":");
     std::string strCommand;
 
-    if (nPos == std::string::npos)
-    {
-       strCommand = strCMD;
-       strArg.clear();
-    }
-    else
-    {
+    if (nPos == std::string::npos) {
+        strCommand = strCMD;
+        strArg.clear();
+    } else {
         strCommand = strCMD.substr(0, nPos);
-        strArg = strCMD.substr(nPos+1);
+        strArg = strCMD.substr(nPos + 1);
     }
 
-    if (strCommand == "search")
-    {
+    if (strCommand == "search") {
         return cc_search;
     }
-    if (strCommand == "simplesearch")
-    {
+    if (strCommand == "simplesearch") {
         return cc_simplesearch;
-    }
-    else if (strCommand == "load")
-    {
+    } else if (strCommand == "load") {
         return cc_download;
-    }
-    else if (strCommand == "loadall")
-    {
+    } else if (strCommand == "loadall") {
         return cc_download_all;
-    }
-    else if (strCommand == "save")
-    {
+    } else if (strCommand == "save") {
         return cc_save_fast_resume;
-    }
-    else if (strCommand == "restore")
-    {
+    } else if (strCommand == "restore") {
         return cc_restore;
-    }
-    else if (strCommand == "share")
-    {
+    } else if (strCommand == "share") {
         return cc_share;
-    }
-    else if (strCommand == "remove")
-    {
+    } else if (strCommand == "remove") {
         return cc_remove;
-    }
-    else if (strCommand == "dump")
-    {
+    } else if (strCommand == "dump") {
         return cc_dump;
-    }
-    else if (strCommand == "unshare")
-    {
+    } else if (strCommand == "unshare") {
         return cc_unshare;
-    }
-    else if (strCommand == "sharef")
-    {
+    } else if (strCommand == "sharef") {
         return cc_sharef;
-    }
-    else if (strCommand == "unsharef")
-    {
+    } else if (strCommand == "unsharef") {
         return cc_unsharef;
-    }
-    else if (strCommand == "connect")
-    {
+    } else if (strCommand == "connect") {
         return cc_connect;
-    }
-    else if (strCommand == "disconnect")
-    {
+    } else if (strCommand == "disconnect") {
         return cc_disconnect;
-    }
-    else if (strCommand == "listen")
-    {
+    } else if (strCommand == "listen") {
         return cc_listen;
-    }
-    else if (strCommand == "tr")
-    {
+    } else if (strCommand == "tr") {
         return cc_tr;
-    }
-    else if (strCommand == "sst")
-    {
+    } else if (strCommand == "sst") {
         return cc_search_test;
     }
 
@@ -214,43 +175,32 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
 libed2k::shared_files_list vSF;
 boost::mutex m_sf_mutex;
 
-void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_timer* pt, libed2k::session* ps)
-{
-    if (ec == boost::asio::error::operation_aborted)
-    {
+void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_timer* pt, libed2k::session* ps) {
+    if (ec == boost::asio::error::operation_aborted) {
         return;
     }
 
     std::auto_ptr<alert> a = ps->pop_alert();
 
-    while(a.get())
-    {
-        if (dynamic_cast<server_connection_initialized_alert*>(a.get()))
-        {
+    while (a.get()) {
+        if (dynamic_cast<server_connection_initialized_alert*>(a.get())) {
             server_connection_initialized_alert* p = dynamic_cast<server_connection_initialized_alert*>(a.get());
-            DBG("ALERT:  " << "server initalized: cid: " << p->client_id);
-        }
-        else if (dynamic_cast<server_name_resolved_alert*>(a.get()))
-        {
+            DBG("ALERT:  "
+                << "server initalized: cid: " << p->client_id);
+        } else if (dynamic_cast<server_name_resolved_alert*>(a.get())) {
             DBG("ALERT: server name was resolved: " << dynamic_cast<server_name_resolved_alert*>(a.get())->endpoint);
-        }
-        else if (dynamic_cast<server_status_alert*>(a.get()))
-        {
+        } else if (dynamic_cast<server_status_alert*>(a.get())) {
             server_status_alert* p = dynamic_cast<server_status_alert*>(a.get());
             DBG("ALERT: server status: files count: " << p->files_count << " users count " << p->users_count);
-        }
-        else if (dynamic_cast<server_message_alert*>(a.get()))
-        {
+        } else if (dynamic_cast<server_message_alert*>(a.get())) {
             server_message_alert* p = dynamic_cast<server_message_alert*>(a.get());
-            DBG("ALERT: " << "msg: " << p->server_message);
-        }
-        else if (dynamic_cast<server_identity_alert*>(a.get()))
-        {
+            DBG("ALERT: "
+                << "msg: " << p->server_message);
+        } else if (dynamic_cast<server_identity_alert*>(a.get())) {
             server_identity_alert* p = dynamic_cast<server_identity_alert*>(a.get());
-            DBG("ALERT: server_identity_alert: " << p->server_hash << " name:  " << p->server_name << " descr: " << p->server_descr);
-        }
-        else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get()))
-        {
+            DBG("ALERT: server_identity_alert: " << p->server_hash << " name:  " << p->server_name
+                                                 << " descr: " << p->server_descr);
+        } else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get())) {
             boost::mutex::scoped_lock l(m_sf_mutex);
             DBG("ALERT: RESULT: " << p->m_files.m_collection.size());
             vSF.clear();
@@ -258,92 +208,64 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
 
             boost::uint64_t nSize = 0;
 
-            for (size_t n = 0; n < vSF.m_size; ++n)
-            {
+            for (size_t n = 0; n < vSF.m_size; ++n) {
                 boost::shared_ptr<base_tag> low = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE);
                 boost::shared_ptr<base_tag> hi = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI);
                 boost::shared_ptr<base_tag> src = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_SOURCES);
 
-                if (low.get())
-                {
+                if (low.get()) {
                     nSize = low->asInt();
                 }
 
-                if (hi.get())
-                {
+                if (hi.get()) {
                     nSize += hi->asInt() << 32;
                 }
 
-                DBG("ALERT: indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
-                    << " name: " << libed2k::convert_to_native(vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME))
-                    << " size: " << nSize
-                    << " src: " << src->asInt());
+                DBG("ALERT: indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString() << " name: "
+                                   << libed2k::convert_to_native(
+                                          vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME))
+                                   << " size: " << nSize << " src: " << src->asInt());
                 std::cout << "ALERT: indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
-                    << " name: " << libed2k::convert_to_native(vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME))
-                    << " size: " << nSize
-                    << " src: " << src->asInt() << "\n";
+                          << " name: " << libed2k::convert_to_native(
+                                              vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME))
+                          << " size: " << nSize << " src: " << src->asInt() << "\n";
             }
-        }
-        else if(dynamic_cast<peer_message_alert*>(a.get()))
-        {
+        } else if (dynamic_cast<peer_message_alert*>(a.get())) {
             peer_message_alert* p = dynamic_cast<peer_message_alert*>(a.get());
             DBG("ALERT: MSG: ADDR: " << int2ipstr(p->m_np.m_nIP) << " MSG " << p->m_strMessage);
-        }
-        else if (peer_disconnected_alert* p = dynamic_cast<peer_disconnected_alert*>(a.get()))
-        {
+        } else if (peer_disconnected_alert* p = dynamic_cast<peer_disconnected_alert*>(a.get())) {
             DBG("ALERT: peer disconnected: " << libed2k::int2ipstr(p->m_np.m_nIP));
-        }
-        else if (peer_captcha_request_alert* p = dynamic_cast<peer_captcha_request_alert*>(a.get()))
-        {
+        } else if (peer_captcha_request_alert* p = dynamic_cast<peer_captcha_request_alert*>(a.get())) {
             DBG("ALERT: captcha request ");
             FILE* fp = fopen("./captcha.bmp", "wb");
 
-            if (fp)
-            {
+            if (fp) {
                 fwrite(&p->m_captcha[0], 1, p->m_captcha.size(), fp);
                 fclose(fp);
             }
 
-        }
-        else if (peer_captcha_result_alert* p = dynamic_cast<peer_captcha_result_alert*>(a.get()))
-        {
+        } else if (peer_captcha_result_alert* p = dynamic_cast<peer_captcha_result_alert*>(a.get())) {
             DBG("ALERT: captcha result " << p->m_nResult);
-        }
-        else if (peer_connected_alert* p = dynamic_cast<peer_connected_alert*>(a.get()))
-        {
+        } else if (peer_connected_alert* p = dynamic_cast<peer_connected_alert*>(a.get())) {
             DBG("ALERT: peer connected: " << int2ipstr(p->m_np.m_nIP) << " status: " << p->m_active);
-        }
-        else if (shared_files_access_denied* p = dynamic_cast<shared_files_access_denied*>(a.get()))
-        {
+        } else if (shared_files_access_denied* p = dynamic_cast<shared_files_access_denied*>(a.get())) {
             DBG("ALERT: peer denied access to shared files: " << int2ipstr(p->m_np.m_nIP));
-        }
-        else if (shared_directories_alert* p = dynamic_cast<shared_directories_alert*>(a.get()))
-        {
+        } else if (shared_directories_alert* p = dynamic_cast<shared_directories_alert*>(a.get())) {
             DBG("peer shared directories: " << int2ipstr(p->m_np.m_nIP) << " count: " << p->m_dirs.size());
 
-            for (size_t n = 0; n < p->m_dirs.size(); ++n)
-            {
+            for (size_t n = 0; n < p->m_dirs.size(); ++n) {
                 DBG("ALERT: DIR: " << p->m_dirs[n]);
             }
-        }
-        else if (dynamic_cast<save_resume_data_alert*>(a.get()))
-        {
+        } else if (dynamic_cast<save_resume_data_alert*>(a.get())) {
             DBG("ALERT: save_resume_data_alert");
-        }
-        else if (dynamic_cast<save_resume_data_failed_alert*>(a.get()))
-        {
+        } else if (dynamic_cast<save_resume_data_failed_alert*>(a.get())) {
             DBG("ALERT: save_resume_data_failed_alert");
-        }
-        else if(transfer_params_alert* p = dynamic_cast<transfer_params_alert*>(a.get()))
-        {
-        	if (!p->m_ec)
-        	{
-        		DBG("ALERT: transfer_params_alert, add transfer for: " << p->m_atp.file_path);
-        		ps->add_transfer(p->m_atp);
-        	}
-        }
-        else
-        {
+        } else if (transfer_params_alert* p = dynamic_cast<transfer_params_alert*>(a.get())) {
+            if (!p->m_ec) {
+                DBG("ALERT: transfer_params_alert, add transfer for: " << p->m_atp.file_path);
+                ps->add_transfer(p->m_atp);
+            }
+        } else {
             DBG("ALERT: Unknown alert: " << a.get()->message());
         }
 
@@ -354,10 +276,8 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
     pt->async_wait(boost::bind(&alerts_reader, boost::asio::placeholders::error, pt, ps));
 }
 
-void save_fast_resume(const boost::system::error_code& ec, boost::asio::deadline_timer* pt, libed2k::session* ps)
-{
-    if (ec == boost::asio::error::operation_aborted)
-    {
+void save_fast_resume(const boost::system::error_code& ec, boost::asio::deadline_timer* pt, libed2k::session* ps) {
+    if (ec == boost::asio::error::operation_aborted) {
         return;
     }
 
@@ -365,40 +285,34 @@ void save_fast_resume(const boost::system::error_code& ec, boost::asio::deadline
     std::vector<libed2k::transfer_handle> v = ps->get_transfers();
     int num_resume_data = 0;
 
-    for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i)
-    {
-       libed2k::transfer_handle h = *i;
+    for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i) {
+        libed2k::transfer_handle h = *i;
 
-       if (!h.is_valid()) continue;
+        if (!h.is_valid()) continue;
 
-       DBG("save transfer " << h.hash().toString());
+        DBG("save transfer " << h.hash().toString());
 
-       try
-       {
-
-         if (h.status().state == libed2k::transfer_status::checking_files ||
-             h.status().state == libed2k::transfer_status::queued_for_checking) continue;
-         h.save_resume_data();
-         ++num_resume_data;
-       }
-       catch(libed2k::libed2k_exception& e)
-       {
-           ERR("save error: " << e.what());
-       }
+        try {
+            if (h.status().state == libed2k::transfer_status::checking_files ||
+                h.status().state == libed2k::transfer_status::queued_for_checking)
+                continue;
+            h.save_resume_data();
+            ++num_resume_data;
+        } catch (libed2k::libed2k_exception& e) {
+            ERR("save error: " << e.what());
+        }
     }
 
-    DBG("total saved: "<< num_resume_data);
+    DBG("total saved: " << num_resume_data);
 
     pt->expires_at(pt->expires_at() + boost::posix_time::minutes(3));
     pt->async_wait(boost::bind(&save_fast_resume, boost::asio::placeholders::error, pt, ps));
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     LOGGER_INIT(LOG_ALL)
 
-    if (argc < 4)
-    {
+    if (argc < 4) {
         ERR("Set server host, port and incoming directory");
         return (1);
     }
@@ -415,7 +329,7 @@ int main(int argc, char* argv[])
 
     settings.m_known_file = "./known.met";
     settings.listen_port = 4668;
-    //settings.server_
+    // settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
 
@@ -428,7 +342,6 @@ int main(int argc, char* argv[])
     fs_timer.async_wait(boost::bind(save_fast_resume, boost::asio::placeholders::error, &fs_timer, &ses));
     boost::thread t(boost::bind(&libed2k::io_service::run, &io));
 
-
     /*
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_NOT));
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
@@ -438,18 +351,17 @@ int main(int argc, char* argv[])
     sr.add_entry(libed2k::search_request_entry(FT_FILESIZE, ED2K_SEARCH_OP_GREATER, 300));
     sr.add_entry(libed2k::search_request_entry("HD"));
 */
-    //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_NOT));
-    //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_OR));
-    //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
-    //sr.add_entry(libed2k::search_request_entry("dead"));
-    //sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
+    // sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_NOT));
+    // sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_OR));
+    // sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
+    // sr.add_entry(libed2k::search_request_entry("dead"));
+    // sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
 
-    libed2k::search_request order = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, "db2");
+    libed2k::search_request order = libed2k::generateSearchRequest(0, 0, 0, 0, "", "", "", 0, 0, "db2");
 
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
               << "---- press something other for process alerts " << std::endl;
-
 
     std::string strAlex = "109.191.73.222";
     std::string strDore = "192.168.161.54";
@@ -457,7 +369,7 @@ int main(int argc, char* argv[])
     ip::address a(ip::address::from_string(strDore.c_str()));
     int nPort = 4667;
 
-    DBG("addr: "<< int2ipstr(address2int(a)));
+    DBG("addr: " << int2ipstr(address2int(a)));
     std::string strUser;
     libed2k::peer_connection_handle pch;
 
@@ -467,27 +379,23 @@ int main(int argc, char* argv[])
     std::deque<std::string> vpaths;
     ses.server_connect(scp);
 
-    while ((std::cin >> strUser))
-    {
+    while ((std::cin >> strUser)) {
         DBG("process: " << strUser);
 
-        if (strUser == "quit")
-        {
+        if (strUser == "quit") {
             break;
         }
 
-        switch(extract_cmd(strUser, strArg))
-        {
-            case cc_search:
-            {
+        switch (extract_cmd(strUser, strArg)) {
+            case cc_search: {
                 // execute search
                 DBG("Execute search request: " << strArg);
-                search_request sr = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, libed2k::convert_from_native(strArg));
+                search_request sr =
+                    libed2k::generateSearchRequest(0, 0, 0, 0, "", "", "", 0, 0, libed2k::convert_from_native(strArg));
                 ses.post_search_request(sr);
                 break;
             }
-            case cc_search_test:
-            {
+            case cc_search_test: {
                 DBG("Execute search test");
                 search_request sr;
                 sr.push_back(search_request_entry(search_request_entry::SRE_NOT));
@@ -502,47 +410,42 @@ int main(int argc, char* argv[])
                 ses.post_search_request(sr);
                 break;
             }
-            case cc_simplesearch:
-            {
+            case cc_simplesearch: {
                 DBG("Execute simple search request: " << strArg);
-                search_request sr = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, strArg);
+                search_request sr = libed2k::generateSearchRequest(0, 0, 0, 0, "", "", "", 0, 0, strArg);
                 ses.post_search_request(sr);
-                break;    
+                break;
             }
-            case cc_download:
-            {
+            case cc_download: {
                 boost::mutex::scoped_lock l(m_sf_mutex);
                 int nIndex = atoi(strArg.c_str());
 
-                DBG("execute load for " << nIndex);                
+                DBG("execute load for " << nIndex);
 
-                if (vSF.m_collection.size() > static_cast<size_t>(nIndex))
-                {
+                if (vSF.m_collection.size() > static_cast<size_t>(nIndex)) {
                     DBG("load for: " << vSF.m_collection[nIndex].m_hFile.toString());
                     std::cout << vSF.m_collection[nIndex].m_hFile.toString() << "\n";
                     libed2k::add_transfer_params params;
                     params.file_hash = vSF.m_collection[nIndex].m_hFile;
                     params.file_path = strIncomingDirectory;
-                    params.file_path = libed2k::combine_path(params.file_path, vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME));
+                    params.file_path = libed2k::combine_path(
+                        params.file_path, vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME));
                     params.file_size = vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt();
 
-                    if (vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI))
-                    {
-                        params.file_size += vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI)->asInt() << 32;
+                    if (vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI)) {
+                        params.file_size +=
+                            vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI)->asInt() << 32;
                     }
 
                     ses.add_transfer(params);
                 }
                 break;
             }
-            case cc_download_all:
-            {
+            case cc_download_all: {
                 int nBorder = atoi(strArg.c_str());
                 DBG("Load first " << nBorder);
-                for (size_t nIndex = 0; nIndex < vSF.m_collection.size(); ++nIndex)
-                {
-                    if (nIndex >= static_cast<size_t>(nBorder))
-                    {
+                for (size_t nIndex = 0; nIndex < vSF.m_collection.size(); ++nIndex) {
+                    if (nIndex >= static_cast<size_t>(nBorder)) {
                         break;
                     }
 
@@ -550,12 +453,13 @@ int main(int argc, char* argv[])
                     libed2k::add_transfer_params params;
                     params.file_hash = vSF.m_collection[nIndex].m_hFile;
                     params.file_path = strIncomingDirectory;
-                    params.file_path = libed2k::combine_path(params.file_path, vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME));
+                    params.file_path = libed2k::combine_path(
+                        params.file_path, vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME));
                     params.file_size = vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt();
 
-                    if (vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI))
-                    {
-                        params.file_size += vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI)->asInt() << 32;
+                    if (vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI)) {
+                        params.file_size +=
+                            vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI)->asInt() << 32;
                     }
 
                     ses.add_transfer(params);
@@ -564,59 +468,48 @@ int main(int argc, char* argv[])
 #else
                     Sleep(500);
 #endif
-
                 }
 
                 break;
             }
-            case cc_remove:
-            {
+            case cc_remove: {
                 std::vector<libed2k::transfer_handle> v = ses.get_transfers();
-                for (size_t n = 0; n < v.size(); ++n)
-                {
-                    try
-                    {
+                for (size_t n = 0; n < v.size(); ++n) {
+                    try {
                         ses.remove_transfer(v[n], 0);
+                    } catch (libed2k::libed2k_exception&) {
                     }
-                    catch(libed2k::libed2k_exception&)
-                    {}
                 }
                 break;
             }
-            case cc_save_fast_resume:
-            {
+            case cc_save_fast_resume: {
                 DBG("Save fast resume data");
                 vpaths.clear();
                 std::vector<libed2k::transfer_handle> v = ses.get_transfers();
                 int num_resume_data = 0;
-                for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i)
-                {
+                for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i) {
                     libed2k::transfer_handle h = *i;
                     if (!h.is_valid()) continue;
 
                     DBG("save for " << num_resume_data);
 
-                    try
-                    {
+                    try {
+                        if (h.status().state == libed2k::transfer_status::checking_files ||
+                            h.status().state == libed2k::transfer_status::queued_for_checking)
+                            continue;
 
-                      if (h.status().state == libed2k::transfer_status::checking_files ||
-                          h.status().state == libed2k::transfer_status::queued_for_checking) continue;
-
-                      DBG("call save");
-                      h.save_resume_data();
-                      ++num_resume_data;
+                        DBG("call save");
+                        h.save_resume_data();
+                        ++num_resume_data;
+                    } catch (libed2k::libed2k_exception&) {
                     }
-                    catch(libed2k::libed2k_exception&)
-                    {}
                 }
 
-                while (num_resume_data > 0)
-                {
+                while (num_resume_data > 0) {
                     DBG("wait for alert");
                     libed2k::alert const* a = ses.wait_for_alert(libed2k::seconds(30));
 
-                    if (a == 0)
-                    {
+                    if (a == 0) {
                         DBG(" aborting with " << num_resume_data << " outstanding torrents to save resume data for");
                         break;
                     }
@@ -624,27 +517,24 @@ int main(int argc, char* argv[])
                     DBG("alert ready");
 
                     // Saving fastresume data can fail
-                    libed2k::save_resume_data_failed_alert const* rda = dynamic_cast<libed2k::save_resume_data_failed_alert const*>(a);
+                    libed2k::save_resume_data_failed_alert const* rda =
+                        dynamic_cast<libed2k::save_resume_data_failed_alert const*>(a);
 
-                    if (rda)
-                    {
+                    if (rda) {
                         DBG("save failed");
                         --num_resume_data;
                         ses.pop_alert();
-                        try
-                        {
-                        // Remove torrent from session
-                        if (rda->m_handle.is_valid()) ses.remove_transfer(rda->m_handle, 0);
+                        try {
+                            // Remove torrent from session
+                            if (rda->m_handle.is_valid()) ses.remove_transfer(rda->m_handle, 0);
+                        } catch (libed2k::libed2k_exception&) {
                         }
-                        catch(libed2k::libed2k_exception&)
-                        {}
                         continue;
                     }
 
                     libed2k::save_resume_data_alert const* rd = dynamic_cast<libed2k::save_resume_data_alert const*>(a);
 
-                    if (!rd)
-                    {
+                    if (!rd) {
                         ses.pop_alert();
                         continue;
                     }
@@ -660,7 +550,8 @@ int main(int argc, char* argv[])
 
                     if (!rd->m_handle.is_valid()) continue;
 
-                    libed2k::transfer_resume_data trd(rd->m_handle.hash(), rd->m_handle.name(), rd->m_handle.size(), rd->m_handle.is_seed(), vFastResumeData);
+                    libed2k::transfer_resume_data trd(rd->m_handle.hash(), rd->m_handle.name(), rd->m_handle.size(),
+                                                      rd->m_handle.is_seed(), vFastResumeData);
 
                     // prepare storage filename
                     std::string strStorage = std::string("./") + rd->m_handle.hash().toString();
@@ -668,39 +559,34 @@ int main(int argc, char* argv[])
 
                     std::ofstream fs(strStorage.c_str(), std::ios_base::out | std::ios_base::binary);
 
-                    if (fs)
-                    {
+                    if (fs) {
                         libed2k::archive::ed2k_oarchive oa(fs);
                         oa << trd;
                     }
-
 
                     ses.pop_alert();
                 }
                 break;
             }
-            case cc_restore:
-            {
-                for (size_t n = 0; n < vpaths.size(); ++n)
-                {
+            case cc_restore: {
+                for (size_t n = 0; n < vpaths.size(); ++n) {
                     DBG("restore " << vpaths[n]);
 
                     std::ifstream ifs(vpaths[n].c_str(), std::ios_base::in | std::ios_base::binary);
 
-                    if (ifs)
-                    {
+                    if (ifs) {
                         libed2k::transfer_resume_data trd;
                         libed2k::archive::ed2k_iarchive ia(ifs);
                         ia >> trd;
 
                         libed2k::add_transfer_params params;
                         params.seed_mode = false;
-                        params.file_path= trd.m_filename.m_collection;
+                        params.file_path = trd.m_filename.m_collection;
                         params.file_size = trd.m_filesize;
 
-                        if (trd.m_fast_resume_data.size() > 0)
-                        {
-                            params.resume_data = const_cast<std::vector<char>* >(&trd.m_fast_resume_data.getTagByNameId(libed2k::FT_FAST_RESUME_DATA)->asBlob());
+                        if (trd.m_fast_resume_data.size() > 0) {
+                            params.resume_data = const_cast<std::vector<char>*>(
+                                &trd.m_fast_resume_data.getTagByNameId(libed2k::FT_FAST_RESUME_DATA)->asBlob());
                         }
 
                         params.file_hash = trd.m_hash;
@@ -709,56 +595,45 @@ int main(int argc, char* argv[])
                 }
                 break;
             }
-            case cc_share:
-            {
+            case cc_share: {
                 DBG("share directory: " << strArg);
                 libed2k::error_code ec;
                 libed2k::directory dir(strArg, ec);
-                if (!ec)
-                {
-                	while(!dir.done())
-                	{
-                		dir.next(ec);
-                		ses.make_transfer_parameters(libed2k::combine_path(strArg, dir.file()));
-                	}
-                }
-                else
-                {
-                	DBG(ec.message());
+                if (!ec) {
+                    while (!dir.done()) {
+                        dir.next(ec);
+                        ses.make_transfer_parameters(libed2k::combine_path(strArg, dir.file()));
+                    }
+                } else {
+                    DBG(ec.message());
                 }
 
-                //ses.share_dir(strArg, strArg, v);
+                // ses.share_dir(strArg, strArg, v);
                 break;
             }
-            case cc_unshare:
-            {
+            case cc_unshare: {
                 DBG("unshare " << strArg);
                 std::deque<std::string> v;
-                //ses.unshare_dir(strArg, strArg, v);
+                // ses.unshare_dir(strArg, strArg, v);
                 break;
             }
-            case cc_sharef:
-            {
+            case cc_sharef: {
                 DBG("share file " << strArg);
-                //ses.share_file(strArg);
+                // ses.share_file(strArg);
                 break;
             }
-            case cc_unsharef:
-            {
+            case cc_unsharef: {
                 DBG("unshare file " << strArg);
-                //ses.unshare_file(strArg);
+                // ses.unshare_file(strArg);
                 break;
             }
-            case cc_dump:
-            {
+            case cc_dump: {
                 std::vector<libed2k::transfer_handle> v = ses.get_transfers();
-                for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i)
-                {
-                    DBG("transfer: {" << i->hash().toString() << "}{"
-                            << libed2k::convert_to_native(i->save_path()) << "}{"
-                            << libed2k::convert_to_native(i->name()) << "}{"
-                            << i->size() << "}{"
-                            << libed2k::transfer_status2string(i->status()) << "}{A/S:" << ((i->is_announced())?"Y":"N") << "}");
+                for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i) {
+                    DBG("transfer: {" << i->hash().toString() << "}{" << libed2k::convert_to_native(i->save_path())
+                                      << "}{" << libed2k::convert_to_native(i->name()) << "}{" << i->size() << "}{"
+                                      << libed2k::transfer_status2string(i->status())
+                                      << "}{A/S:" << ((i->is_announced()) ? "Y" : "N") << "}");
                 }
                 break;
             }
@@ -768,22 +643,18 @@ int main(int argc, char* argv[])
             case cc_disconnect:
                 ses.server_disconnect();
                 break;
-            case cc_listen:
-                {
-                    settings.listen_port = atoi(strArg.c_str());
-                    ses.listen_on(settings.listen_port);
-                    DBG("Try listen on " << strArg);
-                    break;
-                }
-            case cc_tr:
-            {
+            case cc_listen: {
+                settings.listen_port = atoi(strArg.c_str());
+                ses.listen_on(settings.listen_port);
+                DBG("Try listen on " << strArg);
+                break;
+            }
+            case cc_tr: {
                 std::vector<libed2k::transfer_handle> vth = ses.get_transfers();
-                for (size_t i = 0; i < vth.size(); ++i)
-                {
-                    DBG("TR: " << vth[i].hash().toString()
-                            << " valid: " << (vth[i].is_valid()?"valid":"invalid")
-                            << " urate: " << vth[i].status().upload_payload_rate
-                            << " drate: " << vth[i].status().download_payload_rate);
+                for (size_t i = 0; i < vth.size(); ++i) {
+                    DBG("TR: " << vth[i].hash().toString() << " valid: " << (vth[i].is_valid() ? "valid" : "invalid")
+                               << " urate: " << vth[i].status().upload_payload_rate
+                               << " drate: " << vth[i].status().download_payload_rate);
                 }
                 break;
             }
@@ -791,20 +662,16 @@ int main(int argc, char* argv[])
                 break;
         }
 
-        if (!strUser.empty() && strUser.size() == 1)
-        {
-            switch(strUser.at(0))
-            {
-            case 'd':
-                ses.server_disconnect();
-                break;
-            case 'c':
-                ses.server_connect(scp);
-                break;
-            case 'f':
-                {
-                    if (pch.empty())
-                    {
+        if (!strUser.empty() && strUser.size() == 1) {
+            switch (strUser.at(0)) {
+                case 'd':
+                    ses.server_disconnect();
+                    break;
+                case 'c':
+                    ses.server_connect(scp);
+                    break;
+                case 'f': {
+                    if (pch.empty()) {
                         pch = ses.add_peer_connection(ni);
                     }
 
@@ -812,64 +679,52 @@ int main(int argc, char* argv[])
                     pch.get_shared_files();
                     break;
                 }
-            case 'm':
-                {
-                    if (pch.empty())
-                    {
+                case 'm': {
+                    if (pch.empty()) {
                         DBG("pch empty - create it");
                         pch = ses.add_peer_connection(ni);
                     }
 
                     DBG("pch send message");
                     pch.send_message("Hello it is peer connection handle");
-                }
-                break;
-            case 's':
-            {
-                if (pch.empty())
-                {
-                    pch = ses.add_peer_connection(ni);
-                }
+                } break;
+                case 's': {
+                    if (pch.empty()) {
+                        pch = ses.add_peer_connection(ni);
+                    }
 
-                pch.get_shared_files();
-            }
-                break;
-            case 'r':
-            {
-                if (pch.empty())
-                {
-                    pch = ses.add_peer_connection(ni);
+                    pch.get_shared_files();
+                } break;
+                case 'r': {
+                    if (pch.empty()) {
+                        pch = ses.add_peer_connection(ni);
+                    }
+
+                    DBG("get shared directories");
+
+                    pch.get_shared_directories();
+                    break;
                 }
+                case 'e': {
+                    if (pch.empty()) {
+                        pch = ses.add_peer_connection(ni);
+                    }
 
-                DBG("get shared directories");
-
-                pch.get_shared_directories();
-                break;
-            }
-            case 'e':
-            {
-                if (pch.empty())
-                {
-                    pch = ses.add_peer_connection(ni);
+                    DBG("get shared files");
+                    pch.get_shared_directory_files("/home/d95a1/sqllib/samples/cpp");
+                    break;
                 }
+                case 'i': {
+                    pch = ses.find_peer_connection(ni);
 
-                DBG("get shared files");
-                pch.get_shared_directory_files("/home/d95a1/sqllib/samples/cpp");
-                break;
-            }
-            case 'i':
-            {
-                pch = ses.find_peer_connection(ni);
-
-                if (pch.empty())
-                {
-                    DBG("peer connection not exists - add it");
-                    pch = ses.add_peer_connection(ni);
+                    if (pch.empty()) {
+                        DBG("peer connection not exists - add it");
+                        pch = ses.add_peer_connection(ni);
+                    }
+                    break;
                 }
-                break;
-            }
-            default:
-                break;
+                default:
+                    break;
             };
         }
     }
@@ -881,6 +736,3 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-
-
-
