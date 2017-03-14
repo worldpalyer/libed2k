@@ -35,10 +35,15 @@ file(GLOB sources src/*.cpp src/*.c)
 
 
 if (BUILD_SHARED)
+    set(l_flags "${l_flags} -lboost_thread -lboost_system")
 	add_library(ed2k SHARED ${headers} ${headers_kad} ${sources} ${sources_kad})
+    install(TARGETS ed2k LIBRARY DESTINATION lib)
 else()
 	add_library(ed2k STATIC ${headers} ${headers_kad} ${sources} ${sources_kad})
+    install(TARGETS ed2k ARCHIVE DESTINATION lib)
 endif()
+install(DIRECTORY include/boost DESTINATION include)
+install(DIRECTORY include/libed2k DESTINATION include)
 
 set_target_properties(ed2k PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${out_dir} )
 set_target_properties(ed2k PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${out_dir})

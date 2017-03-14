@@ -1,6 +1,7 @@
 if(ANDROID)
   return()
 endif()
+set(CMAKE_MACOSX_RPATH 1)
 
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     return()
