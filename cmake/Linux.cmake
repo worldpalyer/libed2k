@@ -6,8 +6,8 @@ endif()
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     return()
 endif(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-
 set(lib_variable "LD_LIBRARY_PATH")
+set(out_dir "${out_dir}/linux")
 
 # check compiler version
 if(CMAKE_COMPILER_IS_GNUCXX)

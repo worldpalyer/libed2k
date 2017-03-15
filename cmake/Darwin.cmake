@@ -1,12 +1,12 @@
 if(ANDROID)
   return()
 endif()
-set(CMAKE_MACOSX_RPATH 1)
-
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     return()
 endif(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
+set(CMAKE_MACOSX_RPATH 1)
+set(out_dir "${out_dir}/darwin")
 set(lib_variable "LD_LIBRARY_PATH")
 
 # check compiler version

@@ -113,7 +113,8 @@ enum CONN_CMD {
     cc_listen,
     cc_empty,
     cc_tr,
-    cc_search_test
+    cc_search_test,
+    cc_source,
 };
 
 CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg) {
@@ -167,6 +168,8 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg) {
         return cc_tr;
     } else if (strCommand == "sst") {
         return cc_search_test;
+    } else if (strCommand == "source") {
+        return cc_source;
     }
 
     return cc_empty;
@@ -317,6 +320,17 @@ int main(int argc, char* argv[]) {
         return (1);
     }
 
+    std::string nnn = "abc";
+    // libed2k::server_status_alert ssa(nnn, nnn, 10, 10, 10);
+    libed2k::server_alert ssa(nnn, nnn, 10);
+    libed2k::alert* sss = ssa.clone().release();
+    // libed2k::server_status_alert* ssb = dynamic_cast<libed2k::server_status_alert*>(sss);
+    libed2k::server_alert* ssb = dynamic_cast<libed2k::server_alert*>(sss);
+    if (sss != ssb) {
+        printf("check dynamic_cast by %p=%p fail\n", sss, ssb);
+        return 1;
+    }
+    //
     DBG("Server: " << argv[1] << " port: " << argv[2]);
 
     // immediately convert to utf8
@@ -438,6 +452,21 @@ int main(int argc, char* argv[]) {
                     }
 
                     ses.add_transfer(params);
+                }
+                break;
+            }
+            case cc_source: {
+                boost::mutex::scoped_lock l(m_sf_mutex);
+                int nIndex = atoi(strArg.c_str());
+
+                DBG("execute load for " << nIndex);
+
+                if (vSF.m_collection.size() > static_cast<size_t>(nIndex)) {
+                    DBG("load for: " << vSF.m_collection[nIndex].m_hFile.toString());
+                    std::cout << vSF.m_collection[nIndex].m_hFile.toString() << "\n";
+                    ses.post_sources_request(
+                        vSF.m_collection[nIndex].m_hFile,
+                        vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt());
                 }
                 break;
             }
@@ -611,6 +640,7 @@ int main(int argc, char* argv[]) {
                 // ses.share_dir(strArg, strArg, v);
                 break;
             }
+
             case cc_unshare: {
                 DBG("unshare " << strArg);
                 std::deque<std::string> v;

@@ -88,11 +88,11 @@ class alert {
         all_categories = 0xffffffff
     };
 
-    alert();
-    virtual ~alert();
+    alert() {}
+    virtual ~alert() {}
 
     // a timestamp is automatically created in the constructor
-    ptime timestamp() const;
+    virtual ptime timestamp() const { return ptime(); }
 
     virtual char const* what() const = 0;
     virtual std::string message() const = 0;
@@ -100,7 +100,7 @@ class alert {
     virtual std::auto_ptr<alert> clone() const = 0;
 
    private:
-    ptime m_timestamp;
+    // ptime* m_timestamp;
 };
 
 template <class T>
