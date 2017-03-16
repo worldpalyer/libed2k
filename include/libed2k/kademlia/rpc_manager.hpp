@@ -49,7 +49,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace libed2k {
 namespace aux {
-struct session_impl;
+class session_impl;
 }
 }
 
@@ -86,8 +86,13 @@ class LIBED2K_EXTRA_EXPORT rpc_manager {
     template <typename T>
     bool incoming(const T&, udp::endpoint target, node_id* id);
 
+    // template <typename T>
+    // node_id extract_packet_node_id(const T&);
+
     template <typename T>
-    node_id extract_packet_node_id(const T&);
+    node_id extract_packet_node_id(const T&) {
+        return node_id::invalid;
+    }
 
     time_duration tick();
 
@@ -145,6 +150,24 @@ class LIBED2K_EXTRA_EXPORT rpc_manager {
     bool m_destructing;
     uint16_t m_port;
 };
+template <>
+inline node_id rpc_manager::extract_packet_node_id<kad2_hello_res>(const kad2_hello_res& t) {
+    return t.client_info.kid;
+}
+
+template <>
+inline void rpc_manager::append_data<kad2_hello_req>(kad2_hello_req& t) const {
+    t.client_info.kid = m_our_id;
+    t.client_info.tcp_port = m_port;
+    t.client_info.version = KADEMLIA_VERSION;
+}
+
+template <>
+inline kad_id rpc_manager::packet_kad_identifier<kademlia2_res>(const kademlia2_res& t) const {
+    return t.kid_target;
+}
+
+//
 }
 }  // namespace libed2k::dht
 
