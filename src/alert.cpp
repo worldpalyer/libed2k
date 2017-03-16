@@ -40,9 +40,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace libed2k {
 
-// alert::alert() {}
-// alert::~alert() {}
-// ptime* alert::timestamp() const { return 0; }
+alert::alert() : m_timestamp(time_now()) {}
+alert::~alert() {}
+ptime alert::timestamp() const { return m_timestamp; }
 
 alert_manager::alert_manager(io_service& ios)
     : m_alert_mask(alert::error_notification), m_queue_size_limit(queue_size_limit_default), m_ios(ios) {}
