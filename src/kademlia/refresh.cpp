@@ -38,83 +38,63 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <libed2k/io.hpp>
 
-namespace libed2k { namespace dht
-{
+namespace libed2k {
+namespace dht {
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-	LIBED2K_DECLARE_LOG(traversal);
+LIBED2K_DECLARE_LOG(traversal);
 #endif
 
-refresh::refresh(
-	node_impl& node
-	, node_id target
-	, done_callback const& callback)
-	: find_data(node, target, find_data::data_callback(), callback, 0)
-{
-}
+refresh::refresh(node_impl& node, node_id target, done_callback const& callback)
+    : find_data(node, target, find_data::data_callback(), callback, 0) {}
 
-char const* refresh::name() const
-{
-	return "refresh";
-}
+char const* refresh::name() const { return "refresh"; }
 
-observer_ptr refresh::new_observer(void* ptr
-	, udp::endpoint const& ep, node_id const& id)
-{
-	observer_ptr o(new (ptr) find_data_observer(this, ep, id));
+observer_ptr refresh::new_observer(void* ptr, udp::endpoint const& ep, node_id const& id) {
+    observer_ptr o(new (ptr) find_data_observer(this, ep, id));
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
-	o->m_in_constructor = false;
+    o->m_in_constructor = false;
 #endif
-	return o;
+    return o;
 }
 
-bool refresh::invoke(observer_ptr o)
-{
+bool refresh::invoke(observer_ptr o) {
     kad2_hello_req p;
     return m_node.m_rpc.invoke(p, o->target_ep(), o);
 }
 
-bootstrap::bootstrap(
-	node_impl& node
-	, node_id target
-	, done_callback const& callback)
-	: refresh(node, target, callback)
-{
-	// make it more resilient to nodes not responding.
-	// we don't want to terminate early when we're bootstrapping
-	m_num_target_nodes *= 2;
+bootstrap::bootstrap(node_impl& node, node_id target, done_callback const& callback) : refresh(node, target, callback) {
+    // make it more resilient to nodes not responding.
+    // we don't want to terminate early when we're bootstrapping
+    m_num_target_nodes *= 2;
 }
 
 char const* bootstrap::name() const { return "bootstrap"; }
 
-void bootstrap::done()
-{
+void bootstrap::done() {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-	LIBED2K_LOG(traversal) << " [" << this << "]"
-		<< " bootstrap done, pinging remaining nodes";
+    LIBED2K_LOG(traversal) << " [" << this << "]"
+                           << " bootstrap done, pinging remaining nodes";
 #endif
 
-	for (std::vector<observer_ptr>::iterator i = m_results.begin()
-		, end(m_results.end()); i != end; ++i)
-	{
-		if ((*i)->flags & observer::flag_queried) continue;
-		// this will send a ping
+    for (std::vector<observer_ptr>::iterator i = m_results.begin(), end(m_results.end()); i != end; ++i) {
+        if ((*i)->flags & observer::flag_queried) continue;
+// this will send a ping
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
         LIBED2K_LOG(traversal) << "ping " << int2ipstr(address2int((*i)->target_ep().address()));
 #endif
-		m_node.add_node((*i)->target_ep(), (*i)->id());
-	}
-	refresh::done();
+        m_node.add_node((*i)->target_ep(), (*i)->id());
+    }
+    refresh::done();
 }
 
 bool bootstrap::invoke(observer_ptr o) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
     LIBED2K_LOG(traversal) << " [" << this << "]"
-        << " bootstrapping ==> " << o->target_addr();
+                           << " bootstrapping ==> " << o->target_addr();
 #endif
     kad2_bootstrap_req p;
     return m_node.m_rpc.invoke(p, o->target_ep(), o);
 }
-
-} } // namespace libed2k::dht
-
+}
+}  // namespace libed2k::dht

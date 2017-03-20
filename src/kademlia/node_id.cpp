@@ -39,138 +39,122 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/kademlia/node_id.hpp"
 #include "libed2k/hasher.hpp"
 #include "libed2k/assert.hpp"
-#include "libed2k/broadcast_socket.hpp" // for is_local et.al
-#include "libed2k/socket_io.hpp" // for hash_address
+#include "libed2k/broadcast_socket.hpp"  // for is_local et.al
+#include "libed2k/socket_io.hpp"         // for hash_address
 #include "libed2k/random.hpp"
 
-namespace libed2k { namespace dht
-{
+namespace libed2k {
+namespace dht {
 
 // returns the distance between the two nodes
 // using the kademlia XOR-metric
-node_id distance(node_id const& n1, node_id const& n2)
-{
-	node_id ret;
-	node_id::iterator k = ret.begin();
-	for (node_id::const_iterator i = n1.begin(), j = n2.begin()
-		, end(n1.end()); i != end; ++i, ++j, ++k)
-	{
-		*k = *i ^ *j;
-	}
-	return ret;
+node_id distance(node_id const& n1, node_id const& n2) {
+    node_id ret;
+    node_id::iterator k = ret.begin();
+    for (node_id::const_iterator i = n1.begin(), j = n2.begin(), end(n1.end()); i != end; ++i, ++j, ++k) {
+        *k = *i ^ *j;
+    }
+    return ret;
 }
 
 // returns true if: distance(n1, ref) < distance(n2, ref)
-bool compare_ref(node_id const& n1, node_id const& n2, node_id const& ref)
-{
-	for (node_id::const_iterator i = n1.begin(), j = n2.begin()
-		, k = ref.begin(), end(n1.end()); i != end; ++i, ++j, ++k)
-	{
-		boost::uint8_t lhs = (*i ^ *k);
-		boost::uint8_t rhs = (*j ^ *k);
-		if (lhs < rhs) return true;
-		if (lhs > rhs) return false;
-	}
-	return false;
+bool compare_ref(node_id const& n1, node_id const& n2, node_id const& ref) {
+    for (node_id::const_iterator i = n1.begin(), j = n2.begin(), k = ref.begin(), end(n1.end()); i != end;
+         ++i, ++j, ++k) {
+        boost::uint8_t lhs = (*i ^ *k);
+        boost::uint8_t rhs = (*j ^ *k);
+        if (lhs < rhs) return true;
+        if (lhs > rhs) return false;
+    }
+    return false;
 }
 
 // returns n in: 2^n <= distance(n1, n2) < 2^(n+1)
 // useful for finding out which bucket a node belongs to
-int distance_exp(node_id const& n1, node_id const& n2)
-{
-	int byte = node_id::size - 1;
-	for (node_id::const_iterator i = n1.begin(), j = n2.begin()
-		, end(n1.end()); i != end; ++i, ++j, --byte)
-	{
-		LIBED2K_ASSERT(byte >= 0);
-		boost::uint8_t t = *i ^ *j;
-		if (t == 0) continue;
-		// we have found the first non-zero byte
-		// return the bit-number of the first bit
-		// that differs
-		int bit = byte * 8;
-		for (int b = 7; b >= 0; --b)
-			if (t >= (1 << b)) return bit + b;
-		return bit;
-	}
+int distance_exp(node_id const& n1, node_id const& n2) {
+    int byte = node_id::size - 1;
+    for (node_id::const_iterator i = n1.begin(), j = n2.begin(), end(n1.end()); i != end; ++i, ++j, --byte) {
+        LIBED2K_ASSERT(byte >= 0);
+        boost::uint8_t t = *i ^ *j;
+        if (t == 0) continue;
+        // we have found the first non-zero byte
+        // return the bit-number of the first bit
+        // that differs
+        int bit = byte * 8;
+        for (int b = 7; b >= 0; --b)
+            if (t >= (1 << b)) return bit + b;
+        return bit;
+    }
 
-	return 0;
+    return 0;
 }
 
-struct static_ { static_() { std::srand((unsigned int)std::time(0)); } } static__;
+struct static_ {
+    static_() { std::srand((unsigned int)std::time(0)); }
+} static__;
 
-node_id generate_id_impl(address const& ip_, boost::uint32_t r)
-{
-	boost::uint8_t* ip = 0;
-	
-	const static boost::uint8_t v4mask[] = { 0x03, 0x0f, 0x3f, 0xff };
-	const static boost::uint8_t v6mask[] = { 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff };
-	boost::uint8_t const* mask = 0;
-	int num_octets = 0;
+node_id generate_id_impl(address const& ip_, boost::uint32_t r) {
+    boost::uint8_t* ip = 0;
 
-	address_v4::bytes_type b4;
+    const static boost::uint8_t v4mask[] = {0x03, 0x0f, 0x3f, 0xff};
+    const static boost::uint8_t v6mask[] = {0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff};
+    boost::uint8_t const* mask = 0;
+    int num_octets = 0;
+
+    address_v4::bytes_type b4;
 #if LIBED2K_USE_IPV6
-	address_v6::bytes_type b6;
-	if (ip_.is_v6())
-	{
-		b6 = ip_.to_v6().to_bytes();
-		ip = &b6[0];
-		num_octets = 8;
-		mask = v6mask;
-	}
-	else
+    address_v6::bytes_type b6;
+    if (ip_.is_v6()) {
+        b6 = ip_.to_v6().to_bytes();
+        ip = &b6[0];
+        num_octets = 8;
+        mask = v6mask;
+    } else
 #endif
-	{
-		b4 = ip_.to_v4().to_bytes();
-		ip = &b4[0];
-		num_octets = 4;
-		mask = v4mask;
-	}
+    {
+        b4 = ip_.to_v4().to_bytes();
+        ip = &b4[0];
+        num_octets = 4;
+        mask = v4mask;
+    }
 
-	for (int i = 0; i < num_octets; ++i)
-		ip[i] &= mask[i];
+    for (int i = 0; i < num_octets; ++i) ip[i] &= mask[i];
 
-	ip[0] |= (r & 0x7) << 5;
+    ip[0] |= (r & 0x7) << 5;
 
-	// this is the crc32c (Castagnoli) polynomial
-	boost::crc_optimal<32, 0x1EDC6F41, 0xFFFFFFFF, 0xFFFFFFFF, true, true> crc;
-	crc.process_block(ip, ip + num_octets);
-	boost::uint32_t c = crc.checksum();
-	node_id id;
+    // this is the crc32c (Castagnoli) polynomial
+    boost::crc_optimal<32, 0x1EDC6F41, 0xFFFFFFFF, 0xFFFFFFFF, true, true> crc;
+    crc.process_block(ip, ip + num_octets);
+    boost::uint32_t c = crc.checksum();
+    node_id id;
 
-	id[0] = (c >> 24) & 0xff;
-	id[1] = (c >> 16) & 0xff;
-	id[2] = ((c >> 8) & 0xf8) | (random() & 0x7);
+    id[0] = (c >> 24) & 0xff;
+    id[1] = (c >> 16) & 0xff;
+    id[2] = ((c >> 8) & 0xf8) | (random() & 0x7);
 
-	for (int i = 3; i < 15; ++i) id[i] = random();
-	id[15] = r;
+    for (int i = 3; i < 15; ++i) id[i] = random();
+    id[15] = r;
 
-	return id;
+    return id;
 }
 
-node_id generate_random_id()
-{
-	char r[md4_hash::size];
-	for (int i = 0; i < md4_hash::size; ++i) r[i] = random();
-	return hasher(r, md4_hash::size).final();
+node_id generate_random_id() {
+    char r[md4_hash::size];
+    for (int i = 0; i < md4_hash::size; ++i) r[i] = random();
+    return hasher(r, md4_hash::size).final();
 }
 
 // verifies whether a node-id matches the IP it's used from
 // returns true if the node-id is OK coming from this source
 // and false otherwise.
-bool verify_id(node_id const& nid, address const& source_ip)
-{
-	// no need to verify local IPs, they would be incorrect anyway
-	if (is_local(source_ip)) return true;
+bool verify_id(node_id const& nid, address const& source_ip) {
+    // no need to verify local IPs, they would be incorrect anyway
+    if (is_local(source_ip)) return true;
 
-	node_id h = generate_id_impl(source_ip, nid[15]);
-	return nid[0] == h[0] && nid[1] == h[1] && (nid[2] & 0xf8) == (h[2] & 0xf8);
+    node_id h = generate_id_impl(source_ip, nid[15]);
+    return nid[0] == h[0] && nid[1] == h[1] && (nid[2] & 0xf8) == (h[2] & 0xf8);
 }
 
-node_id generate_id(address const& ip)
-{
-	return generate_id_impl(ip, rand());
+node_id generate_id(address const& ip) { return generate_id_impl(ip, rand()); }
 }
-
-} }  // namespace libed2k::dht
-
+}  // namespace libed2k::dht
