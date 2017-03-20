@@ -165,6 +165,26 @@ void session::server_connect(const server_connection_parameters& scp) {
     m_impl->m_io_service.post(boost::bind(&server_connection::start, m_impl->m_server_connection, scp));
 }
 
+void session::slave_server_connect(const server_connection_parameters& scp) {
+    const std::string key = scp.tostring();
+    boost::intrusive_ptr<server_connection> slave_sc;
+    if (m_impl->m_slave_sc.find(key) == m_impl->m_slave_sc.end()) {
+        slave_sc = boost::intrusive_ptr<server_connection>(new server_connection(*m_impl));
+        m_impl->m_slave_sc[key] = slave_sc;
+    } else {
+        slave_sc = m_impl->m_slave_sc[key];
+    }
+    m_impl->m_io_service.post(boost::bind(&server_connection::start, slave_sc, scp));
+}
+
+void session::slave_server_disconnect(const server_connection_parameters& scp) {
+    std::string key = scp.tostring();
+    if (m_impl->m_slave_sc.find(key) == m_impl->m_slave_sc.end()) {
+        return;
+    }
+    m_impl->m_slave_sc.erase(key);
+}
+
 void session::server_disconnect() {
     m_impl->m_io_service.post(
         boost::bind(&server_connection::stop, m_impl->m_server_connection, boost::asio::error::operation_aborted));

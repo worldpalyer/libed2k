@@ -52,6 +52,12 @@ void server_connection_parameters::set_announce_timeout(int timeout) {
     announce_timeout = timeout > 0 ? seconds(timeout) : pos_infin;
 }
 
+std::string server_connection_parameters::tostring() const {
+    std::stringstream str;
+    str << host << ":" << port;
+    return str.str();
+}
+
 server_connection::server_connection(aux::session_impl& ses)
     : m_client_id(0),
       m_name_lookup(ses.m_io_service),

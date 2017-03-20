@@ -282,6 +282,9 @@ class session_impl : public session_impl_base {
     /** this method simple send information packet to server and break search order */
     void post_cancel_search();
 
+    /** offer file to server */
+    void post_announce(shared_files_list& sl);
+
     /** request sources for file */
     void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
 
@@ -448,7 +451,9 @@ class session_impl : public session_impl_base {
     bandwidth_channel* m_bandwidth_channel[2];
 
     // ed2k server connection
+    typedef std::map<std::string, boost::intrusive_ptr<server_connection> >::value_type slave_sc_vale;
     boost::intrusive_ptr<server_connection> m_server_connection;
+    std::map<std::string, boost::intrusive_ptr<server_connection> > m_slave_sc;
 
     // the index of the transfers that will be offered to
     // connect to a peer next time on_tick is called.

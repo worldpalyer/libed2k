@@ -85,7 +85,9 @@ class session {
     int upload_rate_limit() const;
 
     void server_connect(const server_connection_parameters&);
+    void slave_server_connect(const server_connection_parameters& scp);
     void server_disconnect();
+    void slave_server_disconnect(const server_connection_parameters& scp);
     bool server_connection_established() const;
 
     void pause();

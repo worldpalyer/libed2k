@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <boost/format.hpp>
+#include <boost/foreach.hpp>
 
 #include "libed2k/session_impl.hpp"
 #include "libed2k/session.hpp"
@@ -1218,17 +1219,30 @@ session_impl::listen_socket_t session_impl::setup_listener(ip::tcp::endpoint ep,
     return s;
 }
 
-void session_impl::post_search_request(search_request& ro) { m_server_connection->post_search_request(ro); }
+void session_impl::post_search_request(search_request& ro) {
+    m_server_connection->post_search_request(ro);
+    BOOST_FOREACH (const slave_sc_vale& val, m_slave_sc) { val.second->post_search_request(ro); }
+}
 
-void session_impl::post_search_more_result_request() { m_server_connection->post_search_more_result_request(); }
+void session_impl::post_search_more_result_request() {
+    m_server_connection->post_search_more_result_request();
+    BOOST_FOREACH (const slave_sc_vale& val, m_slave_sc) { val.second->post_search_more_result_request(); }
+}
 
 void session_impl::post_cancel_search() {
     shared_files_list sl;
     m_server_connection->post_announce(sl);
+    BOOST_FOREACH (const slave_sc_vale& val, m_slave_sc) { val.second->post_announce(sl); }
+}
+
+void session_impl::post_announce(shared_files_list& sl) {
+    m_server_connection->post_announce(sl);
+    BOOST_FOREACH (const slave_sc_vale& val, m_slave_sc) { val.second->post_announce(sl); }
 }
 
 void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize) {
     m_server_connection->post_sources_request(hFile, nSize);
+    BOOST_FOREACH (const slave_sc_vale& val, m_slave_sc) { val.second->post_sources_request(hFile, nSize); }
 }
 
 void session_impl::update_connections_limit() {

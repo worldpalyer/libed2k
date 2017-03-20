@@ -18,3 +18,5 @@
 *.a
 
 build
+
+CMakeLists.txt.user

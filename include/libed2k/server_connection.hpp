@@ -38,6 +38,7 @@ struct server_connection_parameters {
     void set_keep_alive_timeout(int seconds);
     void set_reconnect_timeout(int seconds);
     void set_announce_timeout(int seconds);
+    std::string tostring() const;
 };
 
 #define CHECK_ABORTED()                                                         \
