@@ -20,7 +20,8 @@
 #include <string.h>
 
 #ifndef LIBED2K_USE_OPENSSL
-namespace {
+namespace libed2k {
+// namespace {
 /*
  * The basic MD4 functions.
  */
@@ -155,7 +156,7 @@ const unsigned char* body(struct MD4_CTX* ctx, const unsigned char* data, size_t
 #undef F
 #undef G
 #undef H
-}
+
 void MD4_Init(struct MD4_CTX* ctx) {
     ctx->a = 0x67452301;
     ctx->b = 0xefcdab89;
@@ -248,6 +249,7 @@ void MD4_Final(boost::uint8_t result[MD4_DIGEST_LENGTH], struct MD4_CTX* ctx) {
     result[15] = ctx->d >> 24;
 
     memset(ctx, 0, sizeof(*ctx));
+}
 }
 #endif
 

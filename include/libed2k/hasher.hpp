@@ -30,7 +30,7 @@ extern "C" {
 #include <openssl/md4.h>
 }
 #else
-
+namespace libed2k {
 // from md4.h
 #define MD4_DIGEST_LENGTH 16
 
@@ -44,7 +44,7 @@ struct LIBED2K_EXTRA_EXPORT MD4_CTX {
 LIBED2K_EXTRA_EXPORT void MD4_Init(struct MD4_CTX* ctx);
 LIBED2K_EXTRA_EXPORT void MD4_Update(struct MD4_CTX* ctx, boost::uint8_t const* data, boost::uint32_t size);
 LIBED2K_EXTRA_EXPORT void MD4_Final(boost::uint8_t result[MD4_DIGEST_LENGTH], struct MD4_CTX* ctx);
-
+}
 #endif
 
 namespace libed2k {
