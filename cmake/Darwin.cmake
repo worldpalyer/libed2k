@@ -44,7 +44,7 @@ endif(DEFINED profiling)
 
 set(c_flags "${cxx_flags} -fPIC")
 set(cxx_flags "${cxx_flags} -D__STDC_LIMIT_MACROS -DLIBED2K_USE_BOOST_DATE_TIME")
-set(cxx_flags "${cxx_flags} -Wall -Wno-long-long -Wpointer-arith -Wformat -Wno-unknown-pragmas -fPIC")
+set(cxx_flags "${cxx_flags} -Wall -Wno-long-long -Wpointer-arith -Wformat -Wno-unknown-pragmas -Wno-unused-private-field -fPIC")
 
 
 if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "3.4.2")

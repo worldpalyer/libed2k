@@ -17,6 +17,7 @@ class add_transfer_params {
     }
 
     md4_hash file_hash;
+    std::string resources;
     std::string file_path;  // full filename in UTF8 always!
     size_type file_size;
     std::vector<md4_hash> piece_hashses;

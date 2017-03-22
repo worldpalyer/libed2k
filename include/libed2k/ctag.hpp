@@ -52,6 +52,7 @@ const tg_nid_type FT_AICH_HASH = 0x27u;
 const tg_nid_type FT_FILEHASH = 0x28u;
 const tg_nid_type FT_COMPLETE_SOURCES = 0x30u;  // nr. of sources which share a
 const tg_nid_type FT_FAST_RESUME_DATA = 0x31u;  // fast resume data array
+const tg_nid_type FT_RESOURCES = 0x41u;         // <string>
 
 // Kad search + some unused tags to mirror the ed2k ones.
 const tg_nid_type TAG_FILENAME = '\x01';     // <string>

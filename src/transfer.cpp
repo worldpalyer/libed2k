@@ -13,13 +13,13 @@
 namespace libed2k {
 /** fake constructor */
 transfer::transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl, const md4_hash& hash,
-                   const std::string& filepath, size_type size)
+                   const std::string& filepath, size_type size, const std::string& resource)
     : m_ses(ses),
       m_save_path(parent_path(filepath)),
       m_complete(-1),
       m_incomplete(-1),
       m_policy(this),
-      m_info(new transfer_info(hash, filename(filepath), size)),
+      m_info(new transfer_info(hash, filename(filepath), size, std::vector<md4_hash>(), resource)),
       m_minute_timer(minutes(1), min_time()) {}
 
 transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interface, int seq,
@@ -42,7 +42,7 @@ transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interfac
       m_complete(p.num_complete_sources),
       m_incomplete(p.num_incomplete_sources),
       m_policy(this),
-      m_info(new transfer_info(p.file_hash, filename(p.file_path), p.file_size, p.piece_hashses)),
+      m_info(new transfer_info(p.file_hash, filename(p.file_path), p.file_size, p.piece_hashses, p.resources)),
       m_accepted(p.accepted),
       m_requested(p.requested),
       m_transferred(p.transferred),
@@ -64,6 +64,7 @@ transfer::~transfer() {
 }
 
 const md4_hash& transfer::hash() const { return m_info->info_hash(); }
+const std::string& transfer::resources() const { return m_info->resources(); }
 size_type transfer::size() const { return m_info->file_at(0).size; }
 const std::string& transfer::name() const { return m_info->name(); }
 const std::string& transfer::save_path() const { return m_save_path; }
@@ -1171,6 +1172,10 @@ shared_file_entry transfer::get_announce() const {
     }
 
     entry.m_list.add_tag(make_string_tag(name(), FT_FILENAME, true));
+    std::string file_res = resources();
+    if (file_res.size()) {
+        entry.m_list.add_tag(make_string_tag(file_res, FT_RESOURCES, true));
+    }
 
     __file_size fs;
     fs.nQuadPart = size();

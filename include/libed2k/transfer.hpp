@@ -44,12 +44,13 @@ class transfer : public boost::enable_shared_from_this<transfer> {
      * you shouldn't it anywhere except unit tests
      */
     transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl, const md4_hash& hash,
-             const std::string& filename, size_type size);
+             const std::string& filename, size_type size, const std::string& resource = "");
 
     transfer(aux::session_impl& ses, tcp::endpoint const& net_interface, int seq, add_transfer_params const& p);
     ~transfer();
 
     const md4_hash& hash() const;
+    const std::string& resources() const;
     size_type size() const;
     const std::string& name() const;
     const std::string& save_path() const;

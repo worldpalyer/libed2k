@@ -38,7 +38,11 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace libed2k {
 transfer_info::transfer_info(transfer_info const& t)
-    : m_files(t.m_files), m_orig_files(t.m_orig_files), m_info_hash(t.m_info_hash), m_piece_hashes(t.m_piece_hashes) {
+    : m_files(t.m_files),
+      m_orig_files(t.m_orig_files),
+      m_info_hash(t.m_info_hash),
+      m_piece_hashes(t.m_piece_hashes),
+      m_resources(t.m_resources) {
 #if defined LIBED2K_DEBUG && !defined LIBED2K_DISABLE_INVARIANT_CHECKS
     t.check_invariant();
 #endif
@@ -64,8 +68,8 @@ void transfer_info::remap_files(file_storage const& f) {
 // just the necessary to use it with piece manager
 // used for transfers with no metadata
 transfer_info::transfer_info(md4_hash const& info_hash, const std::string& filename, size_type filesize,
-                             const std::vector<md4_hash>& piece_hashses)
-    : m_info_hash(info_hash), m_piece_hashes(piece_hashses) {
+                             const std::vector<md4_hash>& piece_hashses, const std::string& resources)
+    : m_info_hash(info_hash), m_piece_hashes(piece_hashses), m_resources(resources) {
     m_files.set_num_pieces(div_ceil(filesize, PIECE_SIZE));
     m_files.set_piece_length(PIECE_SIZE);
     m_files.add_file(filename, filesize);

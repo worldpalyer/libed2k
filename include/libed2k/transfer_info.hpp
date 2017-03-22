@@ -54,7 +54,8 @@ class LIBED2K_EXPORT transfer_info : public intrusive_ptr_base<transfer_info> {
 
     transfer_info(transfer_info const& t);
     transfer_info(md4_hash const& info_hash, const std::string& filename, size_type filesize,
-                  const std::vector<md4_hash>& piece_hashses = std::vector<md4_hash>());
+                  const std::vector<md4_hash>& piece_hashses = std::vector<md4_hash>(),
+                  const std::string& resources = "");
 
     ~transfer_info();
 
@@ -79,6 +80,7 @@ class LIBED2K_EXPORT transfer_info : public intrusive_ptr_base<transfer_info> {
     int piece_length() const { return m_files.piece_length(); }
     int num_pieces() const { return m_files.num_pieces(); }
     const md4_hash& info_hash() const { return m_info_hash; }
+    const std::string& resources() const { return m_resources; }
     const std::string& name() const { return m_files.name(); }
 
     typedef file_storage::iterator file_iterator;
@@ -128,6 +130,8 @@ class LIBED2K_EXPORT transfer_info : public intrusive_ptr_base<transfer_info> {
 
     // the hash that identifies this transfer
     md4_hash m_info_hash;
+    // the file resource
+    std::string m_resources;
     // hashes of the pieces
     std::vector<md4_hash> m_piece_hashes;
 };
