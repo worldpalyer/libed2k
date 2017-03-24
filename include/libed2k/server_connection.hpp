@@ -69,6 +69,7 @@ class server_connection : public intrusive_ptr_base<server_connection>, public b
     void post_announce(shared_files_list& offer_list);
     void post_callback_request(client_id_type);
     void second_tick(int tick_interval_ms);
+    void offer_files();
 
    private:
     // resolve host name go to connect
