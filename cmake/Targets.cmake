@@ -35,7 +35,7 @@ file(GLOB sources src/*.cpp src/*.c)
 
 
 if (BUILD_SHARED)
-    set(l_flags "${l_flags} -lboost_thread -lboost_system")
+    set(l_flags "${l_flags} -lboost_thread -lboost_system -lboost_log -lboost_log_setup")
 	add_library(ed2k SHARED ${headers} ${headers_kad} ${sources} ${sources_kad})
     install(TARGETS ed2k LIBRARY DESTINATION lib)
 else()

@@ -3,43 +3,43 @@
 
 #ifdef LIBED2K_DEBUG
 
-#include "boost/logging/format_fwd.hpp"
+#include <boost/log/common.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/console.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/attributes/timer.hpp>
+#include <boost/log/attributes/named_scope.hpp>
+#include <boost/log/sources/logger.hpp>
+#include <boost/log/support/date_time.hpp>
 
-// Step 1: Optimize : use a cache string, to make formatting the message faster
-BOOST_LOG_FORMAT_MSG(optimize::cache_string_one_str<>)
+// Here we define our application severity levels.
+// enum logger_level { debug, info, error };
 
-#ifndef BOOST_LOG_COMPILE_FAST
-#include "boost/logging/format.hpp"
-#include "boost/logging/writer/ts_write.hpp"
-#endif
-
-using namespace boost::logging;
-
-const unsigned char LOG_CONSOLE = 1;
-const unsigned char LOG_FILE = 2;
-const unsigned char LOG_ALL = '\xFF';
-
-// Step 3 : Specify your logging class(es)
-// typedef boost::logging::logger_format_write< > logger_type;
-// typedef boost::logging::writer::threading::ts_write<> log_type;
-typedef logger_format_write<default_, default_, writer::threading::ts_write> logger_type;
-
-// Step 4: declare which filters and loggers you'll use
-BOOST_DECLARE_LOG_FILTER(g_l_filter, boost::logging::level::holder)
-BOOST_DECLARE_LOG(g_l, logger_type)
-
+//// The formatting logic for the severity level
+// template <typename CharT, typename TraitsT>
+// inline std::basic_ostream<CharT, TraitsT>& operator<<(std::basic_ostream<CharT, TraitsT>& strm, logger_level lvl) {
+//    static const char* const str[] = {"D", "E", "I"};
+//    if (static_cast<std::size_t>(lvl) < (sizeof(str) / sizeof(*str)))
+//        strm << str[lvl];
+//    else
+//        strm << static_cast<int>(lvl);
+//    return strm;
+//}
+// boost::log::sources::severity_logger<logger_level>& shared_severity_logger();
+boost::log::sources::logger& shared_logger();
 // Step 5: define the macros through which you'll log
-#define LDBG_ BOOST_LOG_USE_LOG_IF_LEVEL(g_l(), g_l_filter(), debug) << "[dbg] "
-#define LERR_ BOOST_LOG_USE_LOG_IF_LEVEL(g_l(), g_l_filter(), error) << "[ERR] "
-#define LAPP_ BOOST_LOG_USE_LOG_IF_LEVEL(g_l(), g_l_filter(), info) << "[inf] "
+//#define LDBG_ BOOST_LOG_SEV(g_l(), debug) << "[dbg] "
+//#define LERR_ BOOST_LOG_SEV(g_l(), error) << "[ERR] "
+//#define LAPP_ BOOST_LOG_SEV(g_l(), info) << "[inf] "
 
-#define DBG(x) LDBG_ << x
-#define APP(x) LAPP_ << x
-#define ERR(x) LERR_ << x
+#define DBG(x) BOOST_LOG(shared_logger()) << "D " << x
+#define APP(x) BOOST_LOG(shared_logger()) << "I " << x
+#define ERR(x) BOOST_LOG(shared_logger()) << "E " << x
 
 #define LOGGER_INIT(x) init_logs(x);
 
-void init_logs(unsigned char log_destination = LOG_ALL);
+void init_logs(std::string = "");
 
 #else
 
