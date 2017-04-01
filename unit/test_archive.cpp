@@ -577,7 +577,7 @@ BOOST_AUTO_TEST_CASE(test_tags_getters) {
     src_list.add_tag(libed2k::make_blob_tag(vBlob, libed2k::FT_DL_PREVIEW, true));                          // 7
     src_list.add_tag(libed2k::make_typed_tag(fTag, libed2k::FT_MEDIA_ALBUM, true));                         // 8
     src_list.add_tag(
-        libed2k::make_typed_tag(libed2k::md4_hash(libed2k::md4_hash::terminal), libed2k::FT_AICH_HASH, true));  // 9
+        libed2k::make_typed_tag(libed2k::md4_hash(libed2k::md4_hash::terminal()), libed2k::FT_AICH_HASH, true));  // 9
 
     BOOST_REQUIRE_EQUAL(src_list.size(), 10U);
 
@@ -687,7 +687,7 @@ BOOST_AUTO_TEST_CASE(test_tags_getters) {
     BOOST_CHECK_EQUAL(n_32, n32);
     BOOST_CHECK_EQUAL(n_64, n64);
     BOOST_CHECK_EQUAL(bDst, bTag);
-    BOOST_CHECK(hRes == libed2k::md4_hash(libed2k::md4_hash::terminal));
+    BOOST_CHECK(hRes == libed2k::md4_hash(libed2k::md4_hash::terminal()));
 }
 
 BOOST_AUTO_TEST_CASE(test_list_getters) {
@@ -745,11 +745,11 @@ BOOST_AUTO_TEST_CASE(test_tag_list_equals) {
 }
 
 BOOST_AUTO_TEST_CASE(test_packets) {
-    libed2k::shared_file_entry sh(libed2k::md4_hash::terminal, 100, 12);
+    libed2k::shared_file_entry sh(libed2k::md4_hash::terminal(), 100, 12);
     libed2k::shared_files_list flist;
-    flist.m_collection.push_back(libed2k::shared_file_entry(libed2k::md4_hash::terminal, 1, 2));
-    flist.m_collection.push_back(libed2k::shared_file_entry(libed2k::md4_hash::terminal, 3, 4));
-    flist.m_collection.push_back(libed2k::shared_file_entry(libed2k::md4_hash::terminal, 4, 5));
+    flist.m_collection.push_back(libed2k::shared_file_entry(libed2k::md4_hash::terminal(), 1, 2));
+    flist.m_collection.push_back(libed2k::shared_file_entry(libed2k::md4_hash::terminal(), 3, 4));
+    flist.m_collection.push_back(libed2k::shared_file_entry(libed2k::md4_hash::terminal(), 4, 5));
 
     std::stringstream sstream_out(std::ios::out | std::ios::in | std::ios::binary);
     libed2k::archive::ed2k_oarchive out_string_archive(sstream_out);
@@ -818,7 +818,7 @@ BOOST_AUTO_TEST_CASE(test_links_parsing) {
                     libed2k::url_decode("ed2k://|file|some%5Ffile|100|31D6CFE0D16AE931B73C59D7E0C089C0|/"))
                     .defined());
     BOOST_CHECK(libed2k::emule_collection::fromLink(
-                    libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal, false))
+                    libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal(), false))
                     .defined());
     BOOST_CHECK(!libed2k::emule_collection::fromLink("ed2k://|file|more3|fd|ggfgfg|/").defined());
     BOOST_CHECK(
@@ -844,12 +844,12 @@ BOOST_AUTO_TEST_CASE(test_links_parsing) {
 }
 
 BOOST_AUTO_TEST_CASE(test_links_generation) {
-    BOOST_CHECK_EQUAL(libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal, false),
+    BOOST_CHECK_EQUAL(libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal(), false),
                       "ed2k://|file|some_file|100|31D6CFE0D16AE931B73C59D7E0C089C0|/");
     BOOST_CHECK_EQUAL(libed2k::emule_collection::toLink(
                           "xxx.avi", 100, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79"), true),
                       "ed2k://|file|xxx%2Eavi|100|DB48A1C00CC972488C29D3FEC9F16A79|/");
-    BOOST_CHECK_EQUAL(libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal, true),
+    BOOST_CHECK_EQUAL(libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal(), true),
                       "ed2k://|file|some%5Ffile|100|31D6CFE0D16AE931B73C59D7E0C089C0|/");
 }
 

@@ -52,7 +52,7 @@ void session_impl_base::post_transfer(add_transfer_params const& params) {
 alert const* session_impl_base::wait_for_alert(time_duration max_wait) { return m_alerts.wait_for_alert(max_wait); }
 
 md4_hash session_impl_base::callbacked_lowid(client_id_type id) {
-    md4_hash res(md4_hash::invalid);
+    md4_hash res(md4_hash::invalid());
     lowid_callbacks_map::iterator itr = lowid_conn_dict.find(id);
 
     if (itr != lowid_conn_dict.end()) {
@@ -64,7 +64,7 @@ md4_hash session_impl_base::callbacked_lowid(client_id_type id) {
 }
 
 bool session_impl_base::register_callback(client_id_type id, md4_hash filehash) {
-    LIBED2K_ASSERT(filehash != md4_hash::invalid);
+    LIBED2K_ASSERT(filehash != md4_hash::invalid());
     std::pair<lowid_callbacks_map::iterator, bool> ret = lowid_conn_dict.insert(std::make_pair(id, filehash));
     return ret.second;
 }

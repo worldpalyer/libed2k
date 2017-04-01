@@ -254,10 +254,18 @@ void MD4_Final(boost::uint8_t result[MD4_DIGEST_LENGTH], struct MD4_CTX* ctx) {
 #endif
 
 namespace libed2k {
-const md4_hash md4_hash::terminal = md4_hash::fromString("31D6CFE0D16AE931B73C59D7E0C089C0");
-const md4_hash md4_hash::libed2k = md4_hash::fromString("31D6CFE0D14CE931B73C59D7E0C04BC0");
-const md4_hash md4_hash::emulex = md4_hash::fromString("31D6CFE0D10EE931B73C59D7E0C06FC0");
-const md4_hash md4_hash::invalid = md4_hash::fromString("00000000000000000000000000000000");
+const md4_hash md4_hash::terminal() {
+	return md4_hash::fromString("31D6CFE0D16AE931B73C59D7E0C089C0");
+}
+const md4_hash md4_hash::libed2k() {
+	return md4_hash::fromString("31D6CFE0D14CE931B73C59D7E0C04BC0");
+}
+const md4_hash md4_hash::emule() {
+	return md4_hash::fromString("31D6CFE0D10EE931B73C59D7E0C06FC0");
+}
+const md4_hash md4_hash::invalid() {
+	return md4_hash::fromString("00000000000000000000000000000000");
+}
 
 /*static*/
 md4_hash md4_hash::fromHashset(const std::vector<md4_hash>& hashset) {
@@ -283,7 +291,7 @@ md4_hash md4_hash::fromString(const std::string& strHash) {
     md4_hash hash;
 
     if (!from_hex(strHash.c_str(), MD4_DIGEST_LENGTH * 2, (char*)hash.m_hash)) {
-        hash = invalid;
+        hash = invalid();
     }
 
     return (hash);

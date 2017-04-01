@@ -35,7 +35,7 @@ file(GLOB sources src/*.cpp src/*.c)
 
 
 if (BUILD_SHARED)
-    set(cxx_definitions "${cxx_definitions} BOOST_ALL_NO_LIB")
+    set(cxx_definitions ${cxx_definitions} BOOST_ALL_NO_LIB)
     # set(l_flags "${l_flags} -lboost_thread -lboost_system")
 	add_library(ed2k SHARED ${headers} ${headers_kad} ${sources} ${sources_kad})
     if (NOT WIN32)

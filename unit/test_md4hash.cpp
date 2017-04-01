@@ -34,10 +34,10 @@ BOOST_FIXTURE_TEST_CASE(test_conversion, test_md4_hash) {
     m_test = libed2k::md4_hash::fromString(strHash1);
     BOOST_CHECK_EQUAL(strHash1U, m_test.toString());
     BOOST_CHECK(!libed2k::md4_hash::fromString(std::string("000102030405F6C7XB09KA0B0C0D0F0D")).defined());
-    BOOST_CHECK_EQUAL(std::string("31D6CFE0D16AE931B73C59D7E0C089C0"), libed2k::md4_hash::terminal.toString());
-    BOOST_CHECK_EQUAL(std::string("31D6CFE0D14CE931B73C59D7E0C04BC0"), libed2k::md4_hash::libed2k.toString());
-    BOOST_CHECK_EQUAL(std::string("31D6CFE0D10EE931B73C59D7E0C06FC0"), libed2k::md4_hash::emulex.toString());
-    BOOST_CHECK_EQUAL(std::string("00000000000000000000000000000000"), libed2k::md4_hash::invalid.toString());
+    BOOST_CHECK_EQUAL(std::string("31D6CFE0D16AE931B73C59D7E0C089C0"), libed2k::md4_hash::terminal().toString());
+    BOOST_CHECK_EQUAL(std::string("31D6CFE0D14CE931B73C59D7E0C04BC0"), libed2k::md4_hash::libed2k().toString());
+    BOOST_CHECK_EQUAL(std::string("31D6CFE0D10EE931B73C59D7E0C06FC0"), libed2k::md4_hash::emule().toString());
+    BOOST_CHECK_EQUAL(std::string("00000000000000000000000000000000"), libed2k::md4_hash::invalid().toString());
 }
 
 BOOST_AUTO_TEST_CASE(test_compare) {
@@ -51,8 +51,8 @@ BOOST_AUTO_TEST_CASE(test_compare) {
 }
 
 BOOST_AUTO_TEST_CASE(test_user_agent) {
-    BOOST_CHECK_EQUAL(libed2k::uagent2csoft(libed2k::md4_hash::terminal), libed2k::SO_UNKNOWN);
-    BOOST_CHECK_EQUAL(libed2k::uagent2csoft(libed2k::md4_hash::libed2k), libed2k::SO_LIBED2K);
+    BOOST_CHECK_EQUAL(libed2k::uagent2csoft(libed2k::md4_hash::terminal()), libed2k::SO_UNKNOWN);
+    BOOST_CHECK_EQUAL(libed2k::uagent2csoft(libed2k::md4_hash::libed2k()), libed2k::SO_LIBED2K);
     libed2k::md4_hash ml;
     ml[5] = 'M';
     ml[14] = 'L';
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(test_user_agent) {
     em[14] = 111;
     BOOST_CHECK_EQUAL(libed2k::uagent2csoft(ml), libed2k::SO_MLDONKEY);
     BOOST_CHECK_EQUAL(libed2k::uagent2csoft(em), libed2k::SO_EMULE);
-    BOOST_CHECK_EQUAL(libed2k::uagent2csoft(libed2k::md4_hash::emulex), libed2k::SO_EMULE);
+    BOOST_CHECK_EQUAL(libed2k::uagent2csoft(libed2k::md4_hash::emule()), libed2k::SO_EMULE);
 }
 
 BOOST_AUTO_TEST_CASE(test_partial_hashing_and_hashset) {
@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing_and_hashset) {
         }
 
         if (pieces * libed2k::PIECE_SIZE == itr->first) {
-            part_hashset.push_back(libed2k::md4_hash::terminal);
+            part_hashset.push_back(libed2k::md4_hash::terminal());
         }
 
         BOOST_CHECK_EQUAL(libed2k::md4_hash::fromHashset(part_hashset), itr->second);

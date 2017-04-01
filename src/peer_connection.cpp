@@ -1599,7 +1599,7 @@ void peer_connection::on_hello(const error_code& error) {
             << "} <== " << m_remote);
         md4_hash file_hash = m_ses.callbacked_lowid(hello.m_network_point.m_nIP);
 
-        if (file_hash != md4_hash::invalid) {
+        if (file_hash != md4_hash::invalid()) {
             DBG("lowid peer detected for " << file_hash.toString());
             m_active = true;
             attach_to_transfer(file_hash);

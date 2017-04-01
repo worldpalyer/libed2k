@@ -91,7 +91,7 @@ class LIBED2K_EXTRA_EXPORT rpc_manager {
 
     template <typename T>
     node_id extract_packet_node_id(const T&) {
-        return node_id::invalid;
+        return node_id::invalid();
     }
 
     time_duration tick();

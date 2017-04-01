@@ -917,7 +917,7 @@ std::pair<add_transfer_params, error_code> file2atp::operator()(const std::strin
 
         if (!ec) {
             if (pieces_count * libed2k::PIECE_SIZE == atp.file_size) {
-                atp.piece_hashses.push_back(libed2k::md4_hash::terminal);
+                atp.piece_hashses.push_back(libed2k::md4_hash::terminal());
             }
             // calculate full file hash
             if (atp.piece_hashses.size() > 1) {

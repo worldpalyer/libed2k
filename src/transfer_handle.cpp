@@ -53,7 +53,7 @@ void throw_invalid_handle() { throw libed2k_exception(errors::invalid_transfer_h
 bool transfer_handle::is_valid() const { return !m_transfer.expired(); }
 
 md4_hash transfer_handle::hash() const {
-    static const md4_hash empty_hash(md4_hash::terminal);
+    static const md4_hash empty_hash(md4_hash::terminal());
     LIBED2K_FORWARD_RETURN(hash(), empty_hash);
 }
 

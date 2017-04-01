@@ -55,10 +55,10 @@ class md4_hash {
     enum { number_size = MD4_DIGEST_LENGTH };
     enum { size = number_size };
 
-    static const md4_hash terminal;
-    static const md4_hash libed2k;
-    static const md4_hash emulex;
-    static const md4_hash invalid;
+	static const md4_hash terminal();
+	static const md4_hash libed2k();
+	static const md4_hash emule();
+	static const md4_hash invalid();
 
     static md4_hash fromHashset(const std::vector<md4_hash>& hashset);
     static md4_hash fromString(const std::string& strHash);
