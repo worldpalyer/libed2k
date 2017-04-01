@@ -57,7 +57,7 @@ class md4_hash {
 
     static const md4_hash terminal;
     static const md4_hash libed2k;
-    static const md4_hash emule;
+    static const md4_hash emulex;
     static const md4_hash invalid;
 
     static md4_hash fromHashset(const std::vector<md4_hash>& hashset);

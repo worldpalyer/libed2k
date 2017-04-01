@@ -34,12 +34,12 @@ BOOST_AUTO_TEST_SUITE(test_session)
 BOOST_AUTO_TEST_CASE(test_lowid_logic) {
     libed2k::session_settings ss;
     libed2k::session_test ses(ss);
-    BOOST_CHECK(ses.register_callback(101, libed2k::md4_hash::emule));
+    BOOST_CHECK(ses.register_callback(101, libed2k::md4_hash::emulex));
     BOOST_CHECK(!ses.register_callback(101, libed2k::md4_hash::terminal));  // do not erase old value in current logic
-    BOOST_CHECK(ses.register_callback(102, libed2k::md4_hash::emule));
-    BOOST_CHECK_EQUAL(ses.callbacked_lowid(101), libed2k::md4_hash::emule);
+    BOOST_CHECK(ses.register_callback(102, libed2k::md4_hash::emulex));
+    BOOST_CHECK_EQUAL(ses.callbacked_lowid(101), libed2k::md4_hash::emulex);
     BOOST_CHECK(ses.register_callback(101, libed2k::md4_hash::terminal));
-    BOOST_CHECK_EQUAL(ses.callbacked_lowid(102), libed2k::md4_hash::emule);
+    BOOST_CHECK_EQUAL(ses.callbacked_lowid(102), libed2k::md4_hash::emulex);
     BOOST_CHECK_EQUAL(ses.callbacked_lowid(101), libed2k::md4_hash::terminal);
 }
 
