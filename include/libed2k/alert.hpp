@@ -65,14 +65,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #define LIBED2K_MAX_ALERT_TYPES 7
 #endif
 
-#ifdef LIBED2K_BUILD
-#define LIBED2K_API __declspec(dllexport)
-#else
-#define LIBED2K_API __declspec(dllimport)
-#endif
-
 namespace libed2k {
-class LIBED2K_API alert {
+class alert {
    public:
     // only here for backwards compatibility
     enum severity_t { debug, info, warning, critical, fatal, none };
