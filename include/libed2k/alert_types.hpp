@@ -358,7 +358,7 @@ struct deleted_transfer_alert : alert {
     md4_hash m_hash;
 };
 
-struct finished_transfer_alert : alert {
+struct LIBED2K_API finished_transfer_alert : alert {
     const static int static_category = alert::status_notification;
 
     finished_transfer_alert(const transfer_handle& h, bool has_picker) : m_handle(h), m_had_picker(has_picker) {}

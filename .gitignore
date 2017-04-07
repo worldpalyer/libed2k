@@ -22,3 +22,7 @@ build
 CMakeLists.txt.user
 /unit/Debug
 /cmake/*.bak
+/build64
+/out
+/unit/Release/*.exe
+/*.bak

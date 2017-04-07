@@ -4,6 +4,7 @@ project(libed2k)
 set(libed2k_version 0.0.1)
 set(out_dir "${PROJECT_SOURCE_DIR}/bin")
 
+
 ####### Build customization
 
 # Override from command line "CMake -D<OPTION>=TRUE/FALSE/0/1/ON/OFF"
@@ -15,6 +16,7 @@ option (DISABLE_DHT "Enable KAD support" FALSE)
 option (UPNP_VERBOSE "Verbose output for UPnP" FALSE)
 option (DHT_VERBOSE "Verbose output for DHT" FALSE)
 
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 include(cmake/Environment.cmake)
 include(cmake/Linux.cmake)
 include(cmake/Windows.cmake)

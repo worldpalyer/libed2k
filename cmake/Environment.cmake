@@ -55,4 +55,5 @@ else()
 endif()
 
 message(STATUS "UPNP_VERBOSE	= ${UPNP_VERBOSE}")
-
+message(STATUS "PREFIX    = ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "BOOST_ROOT    = ${BOOST_ROOT}")
