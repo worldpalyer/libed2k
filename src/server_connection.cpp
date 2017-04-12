@@ -176,7 +176,7 @@ void server_connection::second_tick(int tick_interval_ms) {
 void server_connection::offer_files() {
     ptime now = time_now();
     time_duration d = now - last_action_time;
-    printf("xxx->%lu", m_ses.m_transfers.size());
+// printf("xxx->%lu", m_ses.m_transfers.size());
 #ifdef LIBED2K_IS74
     if (announced_transfers_count != m_ses.m_transfers.size() + 1)
 #else
