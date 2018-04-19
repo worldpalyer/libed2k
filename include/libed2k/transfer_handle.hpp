@@ -19,7 +19,7 @@ class session_impl_base;
 class session_impl;
 class session_impl_test;
 class session_fast_rd;
-}
+}  // namespace aux
 
 struct LIBED2K_EXPORT transfer_status {
     transfer_status()
@@ -315,6 +315,7 @@ struct transfer_handle {
    private:
     transfer_handle(const boost::weak_ptr<transfer>& t) : m_transfer(t) {}
 
+   public:
     boost::weak_ptr<transfer> m_transfer;
 };
 
@@ -373,6 +374,6 @@ struct LIBED2K_EXPORT block_info {
 };
 
 extern std::string transfer_status2string(const transfer_status& s);
-}
+}  // namespace libed2k
 
 #endif
