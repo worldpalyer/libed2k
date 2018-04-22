@@ -38,8 +38,9 @@ BOOST_DECLARE_LOG(g_l, logger_type)
 #define ERR(x) LERR_ << x
 
 #define LOGGER_INIT(x) init_logs(x);
+#define LOGGER_INIT_FILE(x, y) init_logs(x, y);
 
-void init_logs(unsigned char log_destination = LOG_ALL);
+void init_logs(unsigned char log_destination = LOG_ALL, const char* outfile = "out.txt");
 
 #else
 
@@ -47,6 +48,7 @@ void init_logs(unsigned char log_destination = LOG_ALL);
 #define APP(x)
 #define ERR(x)
 #define LOGGER_INIT(x)
+#define LOGGER_INIT_FILE(x, y)
 
 #endif
 
