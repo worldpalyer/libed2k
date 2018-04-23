@@ -132,7 +132,7 @@ enum error_code_enum {
     num_errors
 };
 }
-}
+}  // namespace libed2k
 
 namespace boost {
 namespace system {
@@ -145,8 +145,8 @@ template <>
 struct is_error_condition_enum<libed2k::errors::error_code_enum> {
     static const bool value = true;
 };
-}
-}
+}  // namespace system
+}  // namespace boost
 
 namespace libed2k {
 struct libed2k_error_category : boost::system::error_category {
@@ -163,7 +163,7 @@ inline boost::system::error_category& get_libed2k_category() {
 }
 
 using boost::system::error_code;
-inline boost::system::error_category const& get_system_category() { return boost::system::get_system_category(); }
+inline boost::system::error_category const& get_system_category() { return boost::system::system_category(); }
 
 inline boost::system::error_category const& get_posix_category()
 #if BOOST_VERSION < 103600
@@ -172,7 +172,7 @@ inline boost::system::error_category const& get_posix_category()
 }
 #else
 {
-    return boost::system::get_generic_category();
+    return boost::system::generic_category();
 }
 #endif  // BOOST_VERSION < 103600
 
@@ -180,7 +180,7 @@ namespace errors {
 inline boost::system::error_code make_error_code(error_code_enum e) {
     return boost::system::error_code(e, get_libed2k_category());
 }
-}
+}  // namespace errors
 
 using boost::system::error_code;
 
@@ -200,6 +200,6 @@ struct libed2k_exception : std::exception {
     error_code m_error;
     mutable boost::shared_ptr<std::string> m_msg;
 };
-}
+}  // namespace libed2k
 
 #endif
